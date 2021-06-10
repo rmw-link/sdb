@@ -12,9 +12,11 @@ fn main() -> Result<()> {
     .unwrap()
     .join("db");
 
-  let sdb = Sdb::new(&dir, "test");
-
-  println!("{:?}", dir);
+  let sdb = {
+    use sdb::SdbArgs::*;
+    println!("DATABASE DIR {}", dir.display().to_string());
+    Sdb::new(&[Dir(&dir)])
+  };
 
   let mut txn = Env::mut_txn_begin(sdb.env)?;
   let root_db = 0;
@@ -29,6 +31,14 @@ fn main() -> Result<()> {
   btree::put(&mut txn, &mut db, &1, &0).unwrap();
   txn.commit().unwrap();
 
+  /*
+    let mut txn = Env::mut_txn_begin(sdb.env)?;
+    let root_db = 1;
+    let mut db = btree::create_db::<_, [u8; 4], u64>(&mut txn).unwrap();
+    txn.set_root(root_db, db.db);
+    btree::put(&mut txn, &mut db, &"1234", &0).unwrap();
+    txn.commit().unwrap();
+  */
   //  assert_eq!(4, 4);
 
   Ok(())
