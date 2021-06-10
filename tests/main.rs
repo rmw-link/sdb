@@ -22,8 +22,19 @@ fn main() -> Result<()> {
     Sdb::new(&[Dir(&dir)])
   };
 
-  let mut txn = Env::mut_txn_begin(&sdb.env)?;
-  let root_db = 0;
+  let db = sdb.db::<u64, u64>(0);
+  let mut w = db.w();
+  println!("db.id {}", db.id);
+  btree::put(&mut w.tx, &mut w.tree, &1, &5).unwrap();
+  w.tx.commit().unwrap();
+
+  for entry in btree::iter(&db.r(), &db.tree, None).unwrap() {
+    let (k, v) = entry.unwrap();
+    println!("> {:?} {:?}", k, v)
+  }
+
+  /*
+
   let mut db = btree::create_db::<_, u64, u64>(&mut txn).unwrap();
   txn.set_root(root_db, db.db);
   btree::put(&mut txn, &mut db, &1, &3).unwrap();
@@ -34,21 +45,20 @@ fn main() -> Result<()> {
   btree::put(&mut txn, &mut db, &1, &1).unwrap();
   btree::put(&mut txn, &mut db, &1, &0).unwrap();
   txn.commit().unwrap();
+    let mut txn = Env::mut_txn_begin(&sdb.0)?;
+    let root_db = 1;
+    let mut db = btree::create_db::<_, Hash, u64>(&mut txn).unwrap();
+    txn.set_root(root_db, db.db);
+    btree::put(&mut txn, &mut db, &Hash::default(), &3).unwrap();
+    txn.commit().unwrap();
 
-  let mut txn = Env::mut_txn_begin(&sdb.env)?;
-  let root_db = 1;
-  let mut db = btree::create_db::<_, Hash, u64>(&mut txn).unwrap();
-  txn.set_root(root_db, db.db);
-  btree::put(&mut txn, &mut db, &Hash::default(), &3).unwrap();
-  txn.commit().unwrap();
-
-  let txn = Env::txn_begin(&sdb.env).unwrap();
-  let db: btree::Db<Hash, u64> = txn.root_db(root_db).unwrap();
-  for entry in btree::iter(&txn, &db, None).unwrap() {
-    let (k, v) = entry.unwrap();
-    println!("{:?} {:?}", k, v)
-  }
-
+    let txn = Env::txn_begin(&sdb.0).unwrap();
+    let db: btree::Db<Hash, u64> = txn.root_db(root_db).unwrap();
+    for entry in btree::iter(&txn, &db, None).unwrap() {
+      let (k, v) = entry.unwrap();
+      println!("{:?} {:?}", k, v)
+    }
+  */
   //  assert_eq!(4, 4);
 
   Ok(())
