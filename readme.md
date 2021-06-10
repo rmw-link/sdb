@@ -2,7 +2,14 @@
 
 a user-friendly wrapper for [sanakirja](https://docs.rs/sanakirja/latest/sanakirja/) database
 
-## sanakirja ( By Pierre-Étienne Meunier )
+## about
+
+sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
+
+I wrapper it for easy use .
+
+
+## sanakirja
 
 Copy-on-write datastructures, storable on disk (or elsewhere) with a stable format.
 
