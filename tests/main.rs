@@ -23,7 +23,7 @@ fn main() -> Result<()> {
   };
 
   let db = sdb.db::<u64, u64>(0);
-  let mut w = db.w();
+  let mut w = db.w()?;
   println!("db.id {}", db.id);
   btree::put(&mut w.tx, &mut w.tree, &1, &5).unwrap();
   w.tx.commit().unwrap();

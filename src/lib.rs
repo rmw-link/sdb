@@ -1,3 +1,4 @@
+use anyhow::Result;
 use sanakirja::{btree, Commit, Env, MutTxn, RootDb, Storable, Txn};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -23,10 +24,10 @@ pub struct W<'a, K: Storable, V: Storable> {
 }
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
-  pub fn w(&self) -> W<K, V> {
-    let tx = Env::mut_txn_begin(&self.sdb.0).unwrap();
+  pub fn w(&self) -> Result<W<K, V>> {
+    let tx = Env::mut_txn_begin(&self.sdb.0)?;
     let tree: btree::Db<K, V> = tx.root_db(self.id).unwrap();
-    W { tree, tx }
+    Ok(W { tree, tx })
   }
   pub fn r(&self) -> Txn<&Env> {
     Env::txn_begin(&self.sdb.0).unwrap()
