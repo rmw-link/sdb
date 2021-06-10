@@ -23,14 +23,23 @@ pub struct W<'a, K: Storable, V: Storable> {
   pub tx: MutTxn<&'a Env, ()>,
 }
 
+pub struct R<'a, K: Storable, V: Storable> {
+  pub tree: &'a btree::Db<K, V>,
+  pub tx: Txn<&'a Env>,
+}
+
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
   pub fn w(&self) -> Result<W<K, V>> {
     let tx = Env::mut_txn_begin(&self.sdb.0)?;
     let tree: btree::Db<K, V> = tx.root_db(self.id).unwrap();
     Ok(W { tree, tx })
   }
-  pub fn r(&self) -> Txn<&Env> {
-    Env::txn_begin(&self.sdb.0).unwrap()
+  pub fn r(&self) -> Result<R<K, V>> {
+    let tx = Env::txn_begin(&self.sdb.0)?;
+    Ok(R {
+      tree: &self.tree,
+      tx: tx,
+    })
   }
 }
 

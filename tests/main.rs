@@ -28,7 +28,8 @@ fn main() -> Result<()> {
   btree::put(&mut w.tx, &mut w.tree, &1, &5).unwrap();
   w.tx.commit().unwrap();
 
-  for entry in btree::iter(&db.r(), &db.tree, None).unwrap() {
+  let r = db.r()?;
+  for entry in btree::iter(&r.tx, r.tree, None).unwrap() {
     let (k, v) = entry.unwrap();
     println!("> {:?} {:?}", k, v)
   }
