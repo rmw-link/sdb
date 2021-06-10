@@ -1,4 +1,4 @@
-use sanakirja::Env;
+use sanakirja::{btree, Env};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 
@@ -15,7 +15,19 @@ pub struct Sdb {
   pub env: Env,
 }
 
+pub struct Db<'a> {
+  pub env: &'a Env,
+  pub id: usize,
+}
+
 impl Sdb {
+  pub fn db<K, V>(&self, id: usize) -> Db {
+    Db {
+      env: &self.env,
+      id: id,
+    }
+  }
+
   pub fn new(args: &[SdbArgs]) -> Self {
     let mut dir = None;
     let mut filename = None;

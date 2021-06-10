@@ -39,7 +39,7 @@ fn main() -> Result<()> {
   let root_db = 1;
   let mut db = btree::create_db::<_, Hash, u64>(&mut txn).unwrap();
   txn.set_root(root_db, db.db);
-  btree::put(&mut txn, &mut db, &Hash::default(), &0).unwrap();
+  btree::put(&mut txn, &mut db, &Hash::default(), &3).unwrap();
   txn.commit().unwrap();
 
   let txn = Env::txn_begin(&sdb.env).unwrap();
