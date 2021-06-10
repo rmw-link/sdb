@@ -1,0 +1,12 @@
+cargo-features = ["edition2021"]
+
+[package]
+name = "sdb"
+authors = [ "rmw <i@rmw.link>" ]
+edition = "2021"
+version = "0.0.1"
+license = "AGPL-3.0-or-later"
+description="a user-friendly wrapper for sanakirja database"
+
+[dependencies]
+sanakirja = "1.2.4"
