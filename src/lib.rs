@@ -27,6 +27,11 @@ pub struct R<'a, K: Storable, V: Storable> {
   pub tree: &'a btree::Db<K, V>,
   pub tx: Txn<&'a Env>,
 }
+impl<'a, K: Storable, V: Storable> W<'a, K, V> {
+  pub fn commit(self) -> Result<()> {
+    Ok(self.tx.commit()?)
+  }
+}
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
   pub fn w(&self) -> Result<W<K, V>> {
