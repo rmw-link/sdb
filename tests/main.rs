@@ -27,6 +27,12 @@ fn main() -> Result<()> {
   println!("db.id {}", db.id);
   w.put(&5, &11)?;
   w.put(&5, &12)?;
+  /*
+  for entry in w.iter(None)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+  */
   w.commit()?;
   let mut w = db.w()?;
   w.put(&5, &13)?;

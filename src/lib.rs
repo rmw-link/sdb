@@ -19,9 +19,11 @@ pub struct Db<'a, K: Storable, V: Storable> {
   pub tree: btree::Db<K, V>,
 }
 
+type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
+
 pub struct W<'a, K: Storable, V: Storable> {
   pub tree: btree::Db<K, V>,
-  pub tx: MutTxn<&'a Env, ()>,
+  pub tx: MutTxnEnv<'a>,
 }
 
 impl<'a, K: Storable, V: Storable> W<'a, K, V> {
@@ -32,21 +34,41 @@ impl<'a, K: Storable, V: Storable> W<'a, K, V> {
   pub fn commit(self) -> Result<()> {
     Ok(self.tx.commit()?)
   }
+
+  #[inline]
+  pub fn tree_ref(&self) -> &btree::Db<K, V> {
+    &self.tree
+  }
 }
+
+type TxnEnv<'a> = Txn<&'a Env>;
 
 pub struct R<'a, K: Storable, V: Storable> {
   pub tree: &'a btree::Db<K, V>,
-  pub tx: Txn<&'a Env>,
+  pub tx: TxnEnv<'a>,
 }
-
 impl<'a, K: Storable, V: Storable> R<'a, K, V> {
-  pub fn iter(
-    &'a self,
-    start: Option<(&K, Option<&V>)>,
-  ) -> Result<btree::Iter<'a, Txn<&'a Env>, K, V, Page<K, V>>> {
-    Ok(btree::iter(&self.tx, self.tree, start)?)
+  #[inline]
+  pub fn tree_ref(&self) -> &btree::Db<K, V> {
+    self.tree
   }
 }
+
+macro_rules! impl_R {
+  ($cls:ident, $txn:ident) => {
+    impl<'a, K: Storable, V: Storable> $cls<'a, K, V> {
+      pub fn iter(
+        &'a self,
+        start: Option<(&K, Option<&V>)>,
+      ) -> Result<btree::Iter<'a, $txn, K, V, Page<K, V>>> {
+        Ok(btree::iter(&self.tx, self.tree_ref(), start)?)
+      }
+    }
+  };
+}
+
+impl_R!(R, TxnEnv);
+impl_R!(W, MutTxnEnv);
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
   pub fn w(&self) -> Result<W<K, V>> {
