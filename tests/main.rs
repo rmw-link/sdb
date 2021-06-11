@@ -25,11 +25,11 @@ fn main() -> Result<()> {
   let db = sdb.db::<u64, u64>(0);
   let mut w = db.w()?;
   println!("db.id {}", db.id);
-  btree::put(&mut w.tx, &mut w.tree, &5, &11)?;
-  btree::put(&mut w.tx, &mut w.tree, &5, &12)?;
+  w.put(&5, &11)?;
+  w.put(&5, &12)?;
   w.commit()?;
   let mut w = db.w()?;
-  btree::put(&mut w.tx, &mut w.tree, &5, &13)?;
+  w.put(&5, &13)?;
 
   let r = db.r()?;
   for entry in btree::iter(&r.tx, r.tree, None)? {

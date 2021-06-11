@@ -23,10 +23,17 @@ pub struct W<'a, K: Storable, V: Storable> {
   pub tx: MutTxn<&'a Env, ()>,
 }
 
+impl<'a, K: Storable, V: Storable> W<'a, K, V> {
+  pub fn put(&mut self, k: &K, v: &V) -> Result<bool> {
+    Ok(btree::put(&mut self.tx, &mut self.tree, k, v)?)
+  }
+}
+
 pub struct R<'a, K: Storable, V: Storable> {
   pub tree: &'a btree::Db<K, V>,
   pub tx: Txn<&'a Env>,
 }
+
 impl<'a, K: Storable, V: Storable> W<'a, K, V> {
   pub fn commit(self) -> Result<()> {
     Ok(self.tx.commit()?)
