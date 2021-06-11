@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sdb::{direct_repr, Commit, Sdb, Storable, UnsizedStorable, W};
+use sdb::{direct_repr, Commit, Sdb, Storable, UnsizedStorable, R, W};
 use std::env;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -21,10 +21,40 @@ fn main() -> Result<()> {
     Sdb::new(&[Dir(&dir)])
   };
   let db = sdb.db::<u64, u64>(0);
+
   let mut tx = sdb.w()?;
   let mut tree = tx.tree(&db);
+  tx.put(&mut tree, &1, &1)?;
   tx.put(&mut tree, &1, &2)?;
+  tx.put(&mut tree, &2, &0)?;
+  tx.put(&mut tree, &2, &1)?;
+  tx.put(&mut tree, &2, &2)?;
+
+  println!("# print all key");
+  for entry in tx.iter(&tree, None, None)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+
+  println!("# print key greater or equal 2");
+  for entry in tx.iter(&tree, &2, None)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+
+  println!("# print key greater or equal 2 and value greater or equal 1");
+  for entry in tx.iter(&tree, &2, &1)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+
   tx.commit()?;
+
+  /*
+     W!(
+       put!(db,1,2)
+     )
+  */
   /*
 
   tx.put(db,1,2);

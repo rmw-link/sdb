@@ -1,4 +1,6 @@
 use anyhow::Result;
+use sanakirja::btree::page::Page;
+use sanakirja::btree::Iter;
 use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
 use std::convert::Into;
@@ -25,12 +27,39 @@ pub struct Db<'a, K: Storable, V: Storable> {
   _kv: PhantomData<(K, V)>,
 }
 
-pub trait W: AllocPage + Sized + RootDb + Commit {
-  //fn put<K: Storable, V: Storable>(&mut self, db: &mut Db<K, V>, k: &K, v: &V) -> Result<bool> {
-
+pub trait R: Sized + LoadPage + RootDb {
   fn tree<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> btree::Db<K, V> {
     self.root_db(db.id).unwrap()
   }
+
+  fn iter<
+    'a,
+    K: 'a + Storable,
+    V: 'a + Storable,
+    OptionK: Into<Option<&'a K>>,
+    OptionV: Into<Option<&'a V>>,
+  >(
+    &self,
+    db: &btree::Db<K, V>,
+    key: OptionK,
+    value: OptionV,
+  ) -> Result<Iter<Self, K, V, Page<K, V>>, <Self as LoadPage>::Error> {
+    btree::iter(
+      self,
+      db,
+      match key.into() {
+        None => None,
+        Some(k) => match value.into() {
+          None => Some((k, None)),
+          Some(v) => Some((k, Some(v))),
+        },
+      },
+    )
+  }
+}
+
+pub trait W: AllocPage + Sized + RootDb + Commit {
+  //fn put<K: Storable, V: Storable>(&mut self, db: &mut Db<K, V>, k: &K, v: &V) -> Result<bool> {
 
   fn put<K: Storable, V: Storable>(
     &mut self,
@@ -43,6 +72,8 @@ pub trait W: AllocPage + Sized + RootDb + Commit {
 }
 
 impl<'a> W for MutTx<'a> {}
+impl<'a> R for MutTx<'a> {}
+impl<'a> R for Tx<'a> {}
 
 impl Sdb {
   pub fn w(&self) -> Result<MutTx> {
