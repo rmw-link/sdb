@@ -1,4 +1,5 @@
 use anyhow::Result;
+use sanakirja::btree::page::Page;
 use sanakirja::{btree, Commit, Env, MutTxn, RootDb, Storable, Txn};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -27,6 +28,10 @@ impl<'a, K: Storable, V: Storable> W<'a, K, V> {
   pub fn put(&mut self, k: &K, v: &V) -> Result<bool> {
     Ok(btree::put(&mut self.tx, &mut self.tree, k, v)?)
   }
+
+  pub fn commit(self) -> Result<()> {
+    Ok(self.tx.commit()?)
+  }
 }
 
 pub struct R<'a, K: Storable, V: Storable> {
@@ -34,9 +39,12 @@ pub struct R<'a, K: Storable, V: Storable> {
   pub tx: Txn<&'a Env>,
 }
 
-impl<'a, K: Storable, V: Storable> W<'a, K, V> {
-  pub fn commit(self) -> Result<()> {
-    Ok(self.tx.commit()?)
+impl<'a, K: Storable, V: Storable> R<'a, K, V> {
+  pub fn iter(
+    &'a self,
+    start: Option<(&K, Option<&V>)>,
+  ) -> Result<btree::Iter<'a, Txn<&'a Env>, K, V, Page<K, V>>> {
+    Ok(btree::iter(&self.tx, self.tree, start)?)
   }
 }
 

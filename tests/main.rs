@@ -32,8 +32,8 @@ fn main() -> Result<()> {
   w.put(&5, &13)?;
 
   let r = db.r()?;
-  for entry in btree::iter(&r.tx, r.tree, None)? {
-    let (k, v) = entry.unwrap();
+  for entry in r.iter(None)? {
+    let (k, v) = entry?;
     println!("> {:?} {:?}", k, v)
   }
 
