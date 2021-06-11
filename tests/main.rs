@@ -1,6 +1,7 @@
 use anyhow::Result;
 use sanakirja::*;
 use sdb::{Sdb, W};
+use std::cell::RefCell;
 use std::env;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -23,7 +24,12 @@ fn main() -> Result<()> {
   };
 
   let db = sdb.db::<u64, u64>(0);
+  let mut tx = sdb.w()?;
+  let mut w = db.w(tx);
+  w.put(&5, &1)?;
+  tx.commit()?;
 
+  /*
   println!("db.id {}", db.id);
 
   W!(db, db.put(&1, &0)?);
@@ -52,7 +58,6 @@ fn main() -> Result<()> {
     }
   });
 
-  let mut w = db.w()?;
   w.put(&5, &1)?;
   println!("# print greatest key");
   for entry in w.riter(None)? {
@@ -71,6 +76,6 @@ fn main() -> Result<()> {
     let (k, v) = entry?;
     println!("> {:?} {:?}", k, v)
   }
-
+  */
   Ok(())
 }

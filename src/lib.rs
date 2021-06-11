@@ -1,28 +1,36 @@
 use anyhow::Result;
 use sanakirja::btree::page::Page;
 use sanakirja::{btree, Commit, Env, MutTxn, RootDb, Storable, Txn};
+use std::cell::RefCell;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 pub type MutTx<'a> = MutTxn<&'a Env, ()>;
 
 pub struct W<'a, K: Storable, V: Storable> {
   pub tree: btree::Db<K, V>,
-  pub tx: MutTx<'a>,
+  pub tx: Rc<RefCell<MutTx<'a>>>,
 }
 
 impl<'a, K: Storable, V: Storable> W<'a, K, V> {
   pub fn put(&mut self, k: &K, v: &V) -> Result<bool> {
-    Ok(btree::put(&mut self.tx, &mut self.tree, k, v)?)
-  }
-
-  pub fn commit(self) -> Result<()> {
-    Ok(self.tx.commit()?)
+    Ok(btree::put(
+      &mut *self.tx.borrow_mut(),
+      &mut self.tree,
+      k,
+      v,
+    )?)
   }
 
   #[inline]
   pub fn tree_ref(&self) -> &btree::Db<K, V> {
     &self.tree
+  }
+
+  #[inline]
+  pub fn tx_ref(&self) -> &MutTx<'a> {
+    &self.tx.borrow()
   }
 }
 
@@ -30,7 +38,7 @@ pub type Tx<'a> = Txn<&'a Env>;
 
 pub struct R<'a, K: Storable, V: Storable> {
   pub tree: &'a btree::Db<K, V>,
-  pub tx: Tx<'a>,
+  pub tx: &'a Tx<'a>,
 }
 
 impl<'a, K: Storable, V: Storable> R<'a, K, V> {
@@ -38,8 +46,13 @@ impl<'a, K: Storable, V: Storable> R<'a, K, V> {
   pub fn tree_ref(&self) -> &btree::Db<K, V> {
     self.tree
   }
-}
 
+  #[inline]
+  pub fn tx_ref(&self) -> &Tx<'a> {
+    self.tx
+  }
+}
+/*
 #[macro_export]
 macro_rules! W {
   ($db:ident, $fn:expr) => {
@@ -49,6 +62,7 @@ macro_rules! W {
     })?
   };
 }
+*/
 
 macro_rules! impl_R {
   ($cls:ident, $txn:ident) => {
@@ -57,13 +71,13 @@ macro_rules! impl_R {
         &'a self,
         start: Option<(&K, Option<&V>)>,
       ) -> Result<btree::RevIter<'a, $txn, K, V, Page<K, V>>> {
-        Ok(btree::rev_iter(&self.tx, self.tree_ref(), start)?)
+        Ok(btree::rev_iter(self.tx_ref(), self.tree_ref(), start)?)
       }
       pub fn iter(
         &'a self,
         start: Option<(&K, Option<&V>)>,
       ) -> Result<btree::Iter<'a, $txn, K, V, Page<K, V>>> {
-        Ok(btree::iter(&self.tx, self.tree_ref(), start)?)
+        Ok(btree::iter(self.tx_ref(), self.tree_ref(), start)?)
       }
     }
   };
@@ -142,22 +156,22 @@ pub struct Db<'a, K: Storable, V: Storable> {
 }
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
-  pub fn w(&self) -> Result<W<K, V>> {
-    let tx = Env::mut_txn_begin(&self.sdb.0)?;
-    let tree: btree::Db<K, V> = tx.root_db(self.id).unwrap();
-    Ok(W { tree, tx })
+  pub fn w(self, tx: Rc<RefCell<MutTx<'a>>>) -> W<K, V> {
+    let tree: btree::Db<K, V> = tx.borrow().root_db(self.id).unwrap();
+    W { tree, tx }
   }
-  pub fn r(&self) -> Result<R<K, V>> {
-    let tx = Env::txn_begin(&self.sdb.0)?;
-    Ok(R {
+  pub fn r(&self, tx: &'a Tx<'a>) -> R<K, V> {
+    R {
       tree: &self.tree,
       tx: tx,
-    })
+    }
   }
+  /*
   pub fn write<F: FnOnce(&mut W<K, V>) -> Result<()>>(&self, f: F) -> Result<()> {
     let mut w = self.w()?;
     f(&mut w)?;
     w.commit()?;
     Ok(())
   }
+  */
 }
