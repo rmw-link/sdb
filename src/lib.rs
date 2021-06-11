@@ -1,5 +1,6 @@
-use sanakirja::{btree, AllocPage, Commit, Env, LoadPage, MutTxn, RootDb, Txn};
-pub use sanakirja::{direct_repr, Storable, UnsizedStorable};
+use anyhow::Result;
+use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
+pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;
@@ -24,27 +25,31 @@ pub struct Db<'a, K: Storable, V: Storable> {
   _kv: PhantomData<(K, V)>,
 }
 
-pub trait W: AllocPage + Sized + RootDb {
+pub trait W: AllocPage + Sized + RootDb + Commit {
   //fn put<K: Storable, V: Storable>(&mut self, db: &mut Db<K, V>, k: &K, v: &V) -> Result<bool> {
+
+  fn tree<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> btree::Db<K, V> {
+    self.root_db(db.id).unwrap()
+  }
 
   fn put<K: Storable, V: Storable>(
     &mut self,
-    db: &Db<K, V>,
+    tree: &mut btree::Db<K, V>,
     k: &K,
     v: &V,
   ) -> std::result::Result<bool, <Self as LoadPage>::Error> {
-    let mut tree: btree::Db<K, V> = self.root_db(db.id).unwrap();
-    btree::put(self, &mut tree, k, v)
+    btree::put(self, tree, k, v)
   }
 }
+
 impl<'a> W for MutTx<'a> {}
 
 impl Sdb {
-  pub fn w(&self) -> anyhow::Result<MutTx> {
+  pub fn w(&self) -> Result<MutTx> {
     Ok(Env::mut_txn_begin(&self.0)?)
   }
 
-  pub fn r(&self) -> anyhow::Result<Tx> {
+  pub fn r(&self) -> Result<Tx> {
     Ok(Env::txn_begin(&self.0)?)
   }
 

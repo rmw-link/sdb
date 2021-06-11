@@ -1,6 +1,5 @@
 use anyhow::Result;
-#[macro_use]
-use sdb::{Sdb, W, direct_repr, UnsizedStorable, Storable};
+use sdb::{direct_repr, Commit, Sdb, Storable, UnsizedStorable, W};
 use std::env;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -23,8 +22,9 @@ fn main() -> Result<()> {
   };
   let db = sdb.db::<u64, u64>(0);
   let mut tx = sdb.w()?;
-  tx.put(&db, &1, &2);
-
+  let mut tree = tx.tree(&db);
+  tx.put(&mut tree, &1, &2)?;
+  tx.commit()?;
   /*
 
   tx.put(db,1,2);
