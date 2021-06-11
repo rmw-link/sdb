@@ -65,7 +65,7 @@ fn main() -> Result<()> {
   let mut w = db.w()?;
   w.put(&5, &13)?;
 
-  println!("# print all key");
+  println!("# print all key use readonly transaction");
   let r = db.r()?;
   for entry in r.iter(None)? {
     let (k, v) = entry?;
