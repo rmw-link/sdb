@@ -43,7 +43,7 @@ impl<'a, K: Storable, V: Storable> R<'a, K, V> {
 #[macro_export]
 macro_rules! W {
   ($db:ident, $fn:expr) => {
-    $db.w(|$db| {
+    $db.write(|$db| {
       $fn;
       Ok(())
     })?
@@ -128,20 +128,20 @@ pub struct Db<'a, K: Storable, V: Storable> {
 }
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
-  pub fn writer(&self) -> Result<W<K, V>> {
+  pub fn w(&self) -> Result<W<K, V>> {
     let tx = Env::mut_txn_begin(&self.sdb.0)?;
     let tree: btree::Db<K, V> = tx.root_db(self.id).unwrap();
     Ok(W { tree, tx })
   }
-  pub fn reader(&self) -> Result<R<K, V>> {
+  pub fn r(&self) -> Result<R<K, V>> {
     let tx = Env::txn_begin(&self.sdb.0)?;
     Ok(R {
       tree: &self.tree,
       tx: tx,
     })
   }
-  pub fn w<F: FnOnce(&mut W<K, V>) -> Result<()>>(&self, f: F) -> Result<()> {
-    let mut w = self.writer()?;
+  pub fn write<F: FnOnce(&mut W<K, V>) -> Result<()>>(&self, f: F) -> Result<()> {
+    let mut w = self.w()?;
     f(&mut w)?;
     w.commit()?;
     Ok(())
