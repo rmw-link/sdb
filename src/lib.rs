@@ -82,6 +82,14 @@ pub enum SdbArgs<'a> {
 pub struct Sdb(pub(crate) Env);
 
 impl Sdb {
+  pub fn w(&self) -> Result<MutTx> {
+    Ok(Env::mut_txn_begin(&self.0)?)
+  }
+
+  pub fn r(&self) -> Result<Tx> {
+    Ok(Env::txn_begin(&self.0)?)
+  }
+
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
     let tx = Env::txn_begin(&self.0).unwrap();
     let tree = match tx.root_db(id) {
