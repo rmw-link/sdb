@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     .join("db");
 
   let sdb = {
-    use sdb::SdbArgs::*;
+    use sdb::SdbArgs::Dir;
     println!("DATABASE DIR {}", dir.display().to_string());
     Sdb::new(&[Dir(&dir)])
   };
