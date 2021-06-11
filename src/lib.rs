@@ -1,12 +1,98 @@
-use anyhow::Result;
-use sanakirja::btree::page::Page;
-use sanakirja::{btree, Commit, Env, MutTxn, RootDb, Storable, Txn};
-use std::cell::RefCell;
+use sanakirja::{btree, AllocPage, Commit, Env, LoadPage, MutTxn, RootDb, Txn};
+pub use sanakirja::{direct_repr, Storable, UnsizedStorable};
+use std::convert::Into;
 use std::fs::create_dir_all;
+use std::marker::PhantomData;
 use std::path::PathBuf;
-use std::rc::Rc;
 
-pub type MutTx<'a> = MutTxn<&'a Env, ()>;
+pub enum SdbArgs<'a> {
+  Dir(&'a PathBuf),
+  Filename(&'a str),
+  InitSize(u64),
+  MaxTx(usize),
+}
+
+pub struct Sdb(pub(crate) Env);
+
+type MutTx<'a> = MutTxn<&'a Env, ()>;
+
+type Tx<'a> = Txn<&'a Env>;
+
+pub struct Db<'a, K: Storable, V: Storable> {
+  pub sdb: &'a Sdb,
+  pub id: usize,
+  _kv: PhantomData<(K, V)>,
+}
+
+pub trait W: AllocPage + Sized + RootDb {
+  //fn put<K: Storable, V: Storable>(&mut self, db: &mut Db<K, V>, k: &K, v: &V) -> Result<bool> {
+
+  fn put<K: Storable, V: Storable>(
+    &mut self,
+    db: &Db<K, V>,
+    k: &K,
+    v: &V,
+  ) -> std::result::Result<bool, <Self as LoadPage>::Error> {
+    let mut tree: btree::Db<K, V> = self.root_db(db.id).unwrap();
+    btree::put(self, &mut tree, k, v)
+  }
+}
+impl<'a> W for MutTx<'a> {}
+
+impl Sdb {
+  pub fn w(&self) -> anyhow::Result<MutTx> {
+    Ok(Env::mut_txn_begin(&self.0)?)
+  }
+
+  pub fn r(&self) -> anyhow::Result<Tx> {
+    Ok(Env::txn_begin(&self.0)?)
+  }
+
+  pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
+    let tx = self.r().unwrap();
+    let _ = match tx.root_db(id) {
+      Some(tree) => tree,
+      None => {
+        let mut w = Env::mut_txn_begin(&self.0).unwrap();
+        let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
+        w.set_root(id, tree.db);
+        w.commit().unwrap();
+        tree
+      }
+    };
+    Db {
+      sdb: &self,
+      id: id,
+      _kv: PhantomData,
+    }
+  }
+
+  pub fn new(args: &[SdbArgs]) -> Sdb {
+    let mut dir = None;
+    let mut filename = None;
+    let mut init_size = None;
+    let mut max_tx = None;
+    use SdbArgs::*;
+
+    for arg in args {
+      match arg {
+        Dir(i) => dir = (*i).into(),
+        Filename(i) => filename = i.to_string().into(),
+        InitSize(i) => init_size = (*i).into(),
+        MaxTx(i) => max_tx = (*i).into(),
+      }
+    }
+
+    let dir = dir.unwrap();
+    let filename = filename.unwrap_or_else(|| "sdb".into());
+    let init_size = init_size.unwrap_or(1 << 21);
+    let max_tx = max_tx.unwrap_or(3);
+
+    create_dir_all(&dir).unwrap();
+    Sdb(Env::new(dir.join(filename), init_size, max_tx).unwrap())
+  }
+}
+/*
 
 pub struct W<'a, K: Storable, V: Storable> {
   pub tree: btree::Db<K, V>,
@@ -34,7 +120,6 @@ impl<'a, K: Storable, V: Storable> W<'a, K, V> {
   }
 }
 
-pub type Tx<'a> = Txn<&'a Env>;
 
 pub struct R<'a, K: Storable, V: Storable> {
   pub tree: &'a btree::Db<K, V>,
@@ -86,74 +171,7 @@ macro_rules! impl_R {
 impl_R!(R, Tx);
 impl_R!(W, MutTx);
 
-pub enum SdbArgs<'a> {
-  Dir(&'a PathBuf),
-  Filename(&'a str),
-  InitSize(u64),
-  MaxTx(usize),
-}
 
-pub struct Sdb(pub(crate) Env);
-
-impl Sdb {
-  pub fn w(&self) -> Result<MutTx> {
-    Ok(Env::mut_txn_begin(&self.0)?)
-  }
-
-  pub fn r(&self) -> Result<Tx> {
-    Ok(Env::txn_begin(&self.0)?)
-  }
-
-  pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
-    let tx = Env::txn_begin(&self.0).unwrap();
-    let tree = match tx.root_db(id) {
-      Some(tree) => tree,
-      None => {
-        let mut w = Env::mut_txn_begin(&self.0).unwrap();
-        let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
-        w.set_root(id, tree.db);
-        w.commit().unwrap();
-        tree
-      }
-    };
-    Db {
-      sdb: &self,
-      id: id,
-      tree: tree,
-    }
-  }
-
-  pub fn new(args: &[SdbArgs]) -> Sdb {
-    let mut dir = None;
-    let mut filename = None;
-    let mut init_size = None;
-    let mut max_tx = None;
-    use SdbArgs::*;
-
-    for arg in args {
-      match arg {
-        Dir(i) => dir = (*i).into(),
-        Filename(i) => filename = i.to_string().into(),
-        InitSize(i) => init_size = (*i).into(),
-        MaxTx(i) => max_tx = (*i).into(),
-      }
-    }
-
-    let dir = dir.unwrap();
-    let filename = filename.unwrap_or_else(|| "sdb".into());
-    let init_size = init_size.unwrap_or(1 << 21);
-    let max_tx = max_tx.unwrap_or(3);
-
-    create_dir_all(&dir).unwrap();
-    Sdb(Env::new(dir.join(filename), init_size, max_tx).unwrap())
-  }
-}
-
-pub struct Db<'a, K: Storable, V: Storable> {
-  pub sdb: &'a Sdb,
-  pub id: usize,
-  pub tree: btree::Db<K, V>,
-}
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
   pub fn w(self, tx: Rc<RefCell<MutTx<'a>>>) -> W<K, V> {
@@ -175,3 +193,4 @@ impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
   }
   */
 }
+*/

@@ -1,7 +1,6 @@
 use anyhow::Result;
-use sanakirja::*;
-use sdb::{Sdb, W};
-use std::cell::RefCell;
+#[macro_use]
+use sdb::{Sdb, W, direct_repr, UnsizedStorable, Storable};
 use std::env;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -22,14 +21,17 @@ fn main() -> Result<()> {
     println!("DATABASE DIR {}", dir.display().to_string());
     Sdb::new(&[Dir(&dir)])
   };
-
   let db = sdb.db::<u64, u64>(0);
   let mut tx = sdb.w()?;
-  let mut w = db.w(tx);
-  w.put(&5, &1)?;
-  tx.commit()?;
+  tx.put(&db, &1, &2);
 
   /*
+
+  tx.put(db,1,2);
+
+  let mut tx = sdb.w()?;
+  w.put(&5, &1)?;
+  tx.commit()?;
   println!("db.id {}", db.id);
 
   W!(db, db.put(&1, &0)?);
