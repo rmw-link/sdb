@@ -4,6 +4,68 @@ use sanakirja::{btree, Commit, Env, MutTxn, RootDb, Storable, Txn};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 
+pub type MutTx<'a> = MutTxn<&'a Env, ()>;
+
+pub struct W<'a, K: Storable, V: Storable> {
+  pub tree: btree::Db<K, V>,
+  pub tx: MutTx<'a>,
+}
+
+impl<'a, K: Storable, V: Storable> W<'a, K, V> {
+  pub fn put(&mut self, k: &K, v: &V) -> Result<bool> {
+    Ok(btree::put(&mut self.tx, &mut self.tree, k, v)?)
+  }
+
+  pub fn commit(self) -> Result<()> {
+    Ok(self.tx.commit()?)
+  }
+
+  #[inline]
+  pub fn tree_ref(&self) -> &btree::Db<K, V> {
+    &self.tree
+  }
+}
+
+pub type Tx<'a> = Txn<&'a Env>;
+
+pub struct R<'a, K: Storable, V: Storable> {
+  pub tree: &'a btree::Db<K, V>,
+  pub tx: Tx<'a>,
+}
+
+impl<'a, K: Storable, V: Storable> R<'a, K, V> {
+  #[inline]
+  pub fn tree_ref(&self) -> &btree::Db<K, V> {
+    self.tree
+  }
+}
+
+#[macro_export]
+macro_rules! W {
+  ($db:ident, $fn:expr) => {
+    $db.w(|$db| {
+      $fn;
+      Ok(())
+    })?
+  };
+}
+
+macro_rules! impl_R {
+  ($cls:ident, $txn:ident) => {
+    impl<'a, K: Storable, V: Storable> $cls<'a, K, V> {
+      pub fn iter(
+        &'a self,
+        start: Option<(&K, Option<&V>)>,
+      ) -> Result<btree::Iter<'a, $txn, K, V, Page<K, V>>> {
+        Ok(btree::iter(&self.tx, self.tree_ref(), start)?)
+      }
+    }
+  };
+}
+
+impl_R!(R, Tx);
+impl_R!(W, MutTx);
+
 pub enum SdbArgs<'a> {
   Dir(&'a PathBuf),
   Filename(&'a str),
@@ -66,68 +128,22 @@ pub struct Db<'a, K: Storable, V: Storable> {
 }
 
 impl<'a, K: Storable, V: Storable> Db<'a, K, V> {
-  pub fn w(&self) -> Result<W<K, V>> {
+  pub fn writer(&self) -> Result<W<K, V>> {
     let tx = Env::mut_txn_begin(&self.sdb.0)?;
     let tree: btree::Db<K, V> = tx.root_db(self.id).unwrap();
     Ok(W { tree, tx })
   }
-  pub fn r(&self) -> Result<R<K, V>> {
+  pub fn reader(&self) -> Result<R<K, V>> {
     let tx = Env::txn_begin(&self.sdb.0)?;
     Ok(R {
       tree: &self.tree,
       tx: tx,
     })
   }
-}
-
-type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
-
-pub struct W<'a, K: Storable, V: Storable> {
-  pub tree: btree::Db<K, V>,
-  pub tx: MutTxnEnv<'a>,
-}
-
-impl<'a, K: Storable, V: Storable> W<'a, K, V> {
-  pub fn put(&mut self, k: &K, v: &V) -> Result<bool> {
-    Ok(btree::put(&mut self.tx, &mut self.tree, k, v)?)
-  }
-
-  pub fn commit(self) -> Result<()> {
-    Ok(self.tx.commit()?)
-  }
-
-  #[inline]
-  pub fn tree_ref(&self) -> &btree::Db<K, V> {
-    &self.tree
+  pub fn w<F: FnOnce(&mut W<K, V>) -> Result<()>>(&self, f: F) -> Result<()> {
+    let mut w = self.writer()?;
+    f(&mut w)?;
+    w.commit()?;
+    Ok(())
   }
 }
-
-type TxnEnv<'a> = Txn<&'a Env>;
-
-pub struct R<'a, K: Storable, V: Storable> {
-  pub tree: &'a btree::Db<K, V>,
-  pub tx: TxnEnv<'a>,
-}
-
-impl<'a, K: Storable, V: Storable> R<'a, K, V> {
-  #[inline]
-  pub fn tree_ref(&self) -> &btree::Db<K, V> {
-    self.tree
-  }
-}
-
-macro_rules! impl_R {
-  ($cls:ident, $txn:ident) => {
-    impl<'a, K: Storable, V: Storable> $cls<'a, K, V> {
-      pub fn iter(
-        &'a self,
-        start: Option<(&K, Option<&V>)>,
-      ) -> Result<btree::Iter<'a, $txn, K, V, Page<K, V>>> {
-        Ok(btree::iter(&self.tx, self.tree_ref(), start)?)
-      }
-    }
-  };
-}
-
-impl_R!(R, TxnEnv);
-impl_R!(W, MutTxnEnv);

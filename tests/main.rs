@@ -1,6 +1,6 @@
 use anyhow::Result;
 use sanakirja::*;
-use sdb::Sdb;
+use sdb::{Sdb, W};
 use std::env;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -23,10 +23,37 @@ fn main() -> Result<()> {
   };
 
   let db = sdb.db::<u64, u64>(0);
-  let mut w = db.w()?;
+
   println!("db.id {}", db.id);
-  w.put(&5, &11)?;
-  w.put(&5, &12)?;
+
+  W!(db, db.put(&1, &0)?);
+  W!(db, {
+    db.put(&1, &1)?;
+    db.put(&2, &1)?;
+    db.put(&2, &2)?;
+    db.put(&2, &3)?;
+
+    println!("# print all key");
+    for entry in db.iter(None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    println!("# print key greater or equal 2");
+    for entry in db.iter(Some((&2, None)))? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    println!("# print key greater or equal 2 and value greater or equal 2");
+    for entry in db.iter(Some((&2, Some(&2))))? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+  });
+
+  let mut w = db.writer()?;
+  w.put(&5, &1)?;
   /*
   for entry in w.iter(None)? {
     let (k, v) = entry?;
@@ -34,10 +61,12 @@ fn main() -> Result<()> {
   }
   */
   w.commit()?;
-  let mut w = db.w()?;
+
+  let mut w = db.writer()?;
   w.put(&5, &13)?;
 
-  let r = db.r()?;
+  println!("# print all key");
+  let r = db.reader()?;
   for entry in r.iter(None)? {
     let (k, v) = entry?;
     println!("> {:?} {:?}", k, v)
