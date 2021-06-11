@@ -53,6 +53,12 @@ macro_rules! W {
 macro_rules! impl_R {
   ($cls:ident, $txn:ident) => {
     impl<'a, K: Storable, V: Storable> $cls<'a, K, V> {
+      pub fn riter(
+        &'a self,
+        start: Option<(&K, Option<&V>)>,
+      ) -> Result<btree::RevIter<'a, $txn, K, V, Page<K, V>>> {
+        Ok(btree::rev_iter(&self.tx, self.tree_ref(), start)?)
+      }
       pub fn iter(
         &'a self,
         start: Option<(&K, Option<&V>)>,
