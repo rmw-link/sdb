@@ -29,6 +29,9 @@ pub static SDB: Sdb = {
 #[dynamic]
 pub static DB_TEST: Db<'static, u64, u64> = SDB.db::<u64, u64>(0);
 
+#[dynamic]
+pub static DB_TEST2: &Db<'static, u64, u64> = &*_DB_TEST;
+
 #[test]
 fn main() -> Result<()> {
   let mut tx = SDB.w()?;
