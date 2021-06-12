@@ -7,8 +7,9 @@ use std::fs::create_dir_all;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 
+//use static_init::lazy::LesserLazy;
+
 pub enum SdbArgs<'a> {
-  Dir(&'a PathBuf),
   Filename(&'a str),
   InitSize(u64),
   MaxTx(usize),
@@ -25,6 +26,22 @@ pub struct Db<'a, K: Storable, V: Storable> {
   pub id: usize,
   _kv: PhantomData<(K, V)>,
 }
+
+impl<'a, K: Storable, V: Storable> From<&Db<'a, K, V>> for usize {
+  fn from(w: &Db<K, V>) -> usize {
+    w.id
+  }
+}
+
+/*
+impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K, V>>>
+  for Db<'static, K, V>
+{
+  fn move from(w: LesserLazy<Db<'static, K, V>>) -> Db<'static, K, V> {
+    *w
+  }
+}
+*/
 
 macro_rules! iter {
   ($fn:ident, $real:ident, $cls:ident) => {
@@ -60,8 +77,8 @@ pub trait R: Sized + LoadPage + RootDb {
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
 
-  fn tree<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> btree::Db<K, V> {
-    self.root_db(db.id).unwrap()
+  fn tree<K: Storable, V: Storable, T: Into<usize>>(&mut self, id: T) -> btree::Db<K, V> {
+    self.root_db(id.into()).unwrap()
   }
 
   fn exist<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, P: BTreePage<K, V>>(
@@ -149,8 +166,7 @@ impl Sdb {
     }
   }
 
-  pub fn new(args: &[SdbArgs]) -> Sdb {
-    let mut dir = None;
+  pub fn new<P: Into<PathBuf>>(dir: P, args: &[SdbArgs]) -> Sdb {
     let mut filename = None;
     let mut init_size = None;
     let mut max_tx = None;
@@ -158,14 +174,13 @@ impl Sdb {
 
     for arg in args {
       match arg {
-        Dir(i) => dir = (*i).into(),
         Filename(i) => filename = i.to_string().into(),
         InitSize(i) => init_size = (*i).into(),
         MaxTx(i) => max_tx = (*i).into(),
       }
     }
 
-    let dir = dir.unwrap();
+    let dir: PathBuf = dir.into();
     let filename = filename.unwrap_or_else(|| "sdb".into());
     let init_size = init_size.unwrap_or(1 << 21);
     let max_tx = max_tx.unwrap_or(3);
