@@ -1,6 +1,5 @@
 use anyhow::Result;
-use sanakirja::btree::page::Page;
-use sanakirja::btree::{Iter, RevIter};
+use sanakirja::btree::{BTreePage, Db_, Iter, RevIter};
 use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
 use std::convert::Into;
@@ -33,14 +32,15 @@ macro_rules! iter {
       'a,
       K: 'a + Storable,
       V: 'a + Storable,
+      P: BTreePage<K, V>,
       OptionK: Into<Option<&'a K>>,
       OptionV: Into<Option<&'a V>>,
     >(
       &self,
-      tree: &btree::Db<K, V>,
+      tree: &Db_<K, V, P>,
       key: OptionK,
       value: OptionV,
-    ) -> Result<$cls<Self, K, V, Page<K, V>>, <Self as LoadPage>::Error> {
+    ) -> Result<$cls<Self, K, V, P>, <Self as LoadPage>::Error> {
       btree::$real(
         self,
         tree,
@@ -59,13 +59,14 @@ macro_rules! iter {
 pub trait R: Sized + LoadPage + RootDb {
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
+
   fn tree<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> btree::Db<K, V> {
     self.root_db(db.id).unwrap()
   }
 
-  fn exist<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable>(
+  fn exist<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, P: BTreePage<K, V>>(
     &self,
-    tree: &btree::Db<K, V>,
+    tree: &Db_<K, V, P>,
     k: &K,
     v: &V,
   ) -> Result<bool, <Self as LoadPage>::Error> {
@@ -85,9 +86,9 @@ pub trait R: Sized + LoadPage + RootDb {
     }
   }
 
-  fn get<'a, K: 'a + PartialEq + Storable, V: Storable>(
+  fn get<'a, K: 'a + PartialEq + Storable, V: Storable, P: BTreePage<K, V>>(
     &'a self,
-    tree: &btree::Db<K, V>,
+    tree: &Db_<K, V, P>,
     k: &K,
   ) -> Result<Option<&V>, <Self as LoadPage>::Error> {
     match btree::get(self, tree, k, None)? {
