@@ -30,6 +30,12 @@ fn main() -> Result<()> {
   tx.put(&mut tree, &2, &1)?;
   tx.put(&mut tree, &2, &2)?;
 
+  println!("# get one key > {:?}", tx.get(&tree, &1)?);
+
+  println!("# exist 1,2 > {:?}", tx.exist(&tree, &1, &2)?);
+
+  println!("# exist 1,3 > {:?}", tx.exist(&tree, &1, &3)?);
+
   println!("# print all key");
   for entry in tx.iter(&tree, None, None)? {
     let (k, v) = entry?;

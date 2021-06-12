@@ -37,13 +37,13 @@ macro_rules! iter {
       OptionV: Into<Option<&'a V>>,
     >(
       &self,
-      db: &btree::Db<K, V>,
+      tree: &btree::Db<K, V>,
       key: OptionK,
       value: OptionV,
     ) -> Result<$cls<Self, K, V, Page<K, V>>, <Self as LoadPage>::Error> {
       btree::$real(
         self,
-        db,
+        tree,
         match key.into() {
           None => None,
           Some(k) => match value.into() {
@@ -57,12 +57,50 @@ macro_rules! iter {
 }
 
 pub trait R: Sized + LoadPage + RootDb {
+  iter!(iter, iter, Iter);
+  iter!(riter, rev_iter, RevIter);
   fn tree<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> btree::Db<K, V> {
     self.root_db(db.id).unwrap()
   }
 
-  iter!(iter, iter, Iter);
-  iter!(riter, rev_iter, RevIter);
+  fn exist<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable>(
+    &self,
+    tree: &btree::Db<K, V>,
+    k: &K,
+    v: &V,
+  ) -> Result<bool, <Self as LoadPage>::Error> {
+    match btree::get(self, tree, k, v.into())? {
+      None => Ok(false),
+      Some((key, val)) => {
+        if key == k {
+          if val == v {
+            Ok(true)
+          } else {
+            Ok(false)
+          }
+        } else {
+          Ok(false)
+        }
+      }
+    }
+  }
+
+  fn get<'a, K: 'a + PartialEq + Storable, V: Storable>(
+    &'a self,
+    tree: &btree::Db<K, V>,
+    k: &K,
+  ) -> Result<Option<&V>, <Self as LoadPage>::Error> {
+    match btree::get(self, tree, k, None)? {
+      None => Ok(None),
+      Some((key, v)) => {
+        if key == k {
+          Ok(Some(v))
+        } else {
+          Ok(None)
+        }
+      }
+    }
+  }
 }
 
 pub trait W: AllocPage + Sized + RootDb + Commit {
