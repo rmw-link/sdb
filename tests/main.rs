@@ -20,10 +20,12 @@ fn main() -> Result<()> {
     println!("DATABASE DIR {}", dir.display().to_string());
     Sdb::new(&[Dir(&dir)])
   };
+
   let db = sdb.db::<u64, u64>(0);
 
   let mut tx = sdb.w()?;
   let mut tree = tx.tree(&db);
+
   tx.put(&mut tree, &1, &1)?;
   tx.put(&mut tree, &1, &2)?;
   tx.put(&mut tree, &2, &0)?;
