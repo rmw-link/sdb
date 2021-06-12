@@ -11,3 +11,6 @@ description="a user-friendly wrapper for sanakirja database"
 [dependencies]
 anyhow = "1.0.40"
 sanakirja = "1.2.4"
+
+[dev-dependencies]
+static_init = {git="https://gitlab.com/vkahl/static_init.git"}

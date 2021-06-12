@@ -1,30 +1,38 @@
 use anyhow::Result;
-use sdb::{direct_repr, Commit, Sdb, Storable, UnsizedStorable, R, W};
+use sdb::{direct_repr, Commit, Db, Sdb, Storable, UnsizedStorable, R, W};
+use static_init::dynamic;
 use std::env;
+use std::path::Path;
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 struct Hash([u8; 32]);
 direct_repr!(Hash);
 
+#[dynamic]
+pub static DIR: String = env::current_exe()
+  .unwrap()
+  .parent()
+  .unwrap()
+  .parent()
+  .unwrap()
+  .display()
+  .to_string();
+
+#[dynamic]
+pub static SDB: Sdb = {
+  use sdb::SdbArgs::Dir;
+  let dir = Path::new(&*DIR).join("db");
+  println!("DATABASE DIR {}", dir.display().to_string());
+  Sdb::new(&[Dir(&dir)])
+};
+
+#[dynamic]
+pub static DB_TEST: Db<'static, u64, u64> = SDB.db::<u64, u64>(0);
+
 #[test]
 fn main() -> Result<()> {
-  let dir = env::current_exe()?
-    .parent()
-    .unwrap()
-    .parent()
-    .unwrap()
-    .join("db");
-
-  let sdb = {
-    use sdb::SdbArgs::Dir;
-    println!("DATABASE DIR {}", dir.display().to_string());
-    Sdb::new(&[Dir(&dir)])
-  };
-
-  let db = sdb.db::<u64, u64>(0);
-
-  let mut tx = sdb.w()?;
-  let mut tree = tx.tree(&db);
+  let mut tx = SDB.w()?;
+  let mut tree = tx.tree(&*DB_TEST);
 
   tx.put(&mut tree, &1, &1)?;
   tx.put(&mut tree, &1, &2)?;
