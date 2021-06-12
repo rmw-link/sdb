@@ -27,7 +27,7 @@ pub static SDB: Sdb = {
 };
 
 #[dynamic]
-pub static DB_TEST: Db<'static, u64, u64> = SDB.db::<u64, u64>(0);
+pub static DB_TEST: Db<'static, u64, u64> = SDB.db(0);
 
 /*
 #[dynamic]
