@@ -48,6 +48,12 @@ fn main() -> Result<()> {
     println!("> {:?} {:?}", k, v)
   }
 
+  println!("# print key less or equal 2 and value less or equal 1");
+  for entry in tx.riter(&tree, &1, &2)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+
   tx.commit()?;
 
   /*
