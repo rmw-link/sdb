@@ -2,11 +2,14 @@ use anyhow::Result;
 use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreePage, Iter, RevIter};
 use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
-pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
+pub use sanakirja::{direct_repr, Commit, Error, Storable, UnsizedStorable};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+
+type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
+type TxnEnv<'a> = Txn<&'a Env>;
 
 pub struct Tx {
   pub(crate) env: Env,
@@ -42,26 +45,26 @@ macro_rules! tx {
     }
   };
 }
+tx!(WriteTx, MutTxnEnv);
+impl<'a> WriteTx<'a> {
+  pub fn commit(self) -> std::result::Result<(), Error> {
+    self.0.commit()
+  }
+}
 
-type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
-type TxnEnv<'a> = Txn<&'a Env>;
+tx!(ReadTx, TxnEnv);
 
 macro_rules! iter {
   ($fn:ident, $real:ident, $cls:ident) => {
-    pub fn $fn<
-      'b,
-      P: BTreePage<K, V>,
-      OptionK: Into<Option<&'b K>>,
-      OptionV: Into<Option<&'b V>>,
-    >(
+    pub fn $fn<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
       &self,
       key: OptionK,
       value: OptionV,
-    ) -> Result<$cls<T, K, V, P>, <T as LoadPage>::Error> {
+    ) -> Result<$cls<T, K, V, Page<K, V>>, <T as LoadPage>::Error> {
       let tx = unsafe { &*self.tx };
       btree::$real(
         tx,
-        &mut self.db,
+        &self.db,
         match key.into() {
           None => None,
           Some(k) => match value.into() {
@@ -74,10 +77,7 @@ macro_rules! iter {
   };
 }
 
-tx!(WriteTx, MutTxnEnv);
-tx!(ReadTx, TxnEnv);
-
-impl<'a, K: Storable, V: Storable, T: Sized + LoadPage> TxDb<K, V, T> {
+impl<'a, K: 'a + Storable, V: 'a + Storable, T: Sized + LoadPage> TxDb<K, V, T> {
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
 }

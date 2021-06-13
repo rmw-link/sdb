@@ -32,8 +32,8 @@ pub static ref TX: Tx = {
   )
 };
 
-pub static ref T1: Db<'static, u64, u64> = TX.db(0);
+pub static ref DB0: Db<'static, u64, u64> = TX.db(0);
 
-pub static ref T2: Db<'static, u64, u64> = TX.db(1);
+pub static ref DB1: Db<'static, u64, u64> = TX.db(1);
 
 }

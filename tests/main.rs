@@ -1,5 +1,5 @@
 mod db;
-use db::{T1, T2, TX};
+use db::{DB0, DB1, TX};
 
 /*
 mod db {
@@ -54,11 +54,18 @@ pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
 #[test]
 fn main() -> Result<()> {
   let tx = TX.w()?;
-  let mut t1 = tx.db(&T1);
+  let mut t1 = tx.db(&DB0);
 
   t1.put(&1, &1);
   t1.put(&1, &3);
   t1.put(&1, &5);
+
+  println!("# print all key");
+  for entry in t1.iter(None, None)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
+  tx.commit()?;
 
   //let t2 = tx.db(&*T2)?;
   /*
