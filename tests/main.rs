@@ -1,5 +1,5 @@
 mod db;
-use db::{DB0, DB1, TX};
+use db::{DB0, TX};
 
 /*
 mod db {

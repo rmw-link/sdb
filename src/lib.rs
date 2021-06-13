@@ -1,6 +1,6 @@
 use anyhow::Result;
 use sanakirja::btree::page::Page;
-use sanakirja::btree::{BTreePage, Iter, RevIter};
+use sanakirja::btree::{Iter, RevIter};
 use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 pub use sanakirja::{direct_repr, Commit, Error, Storable, UnsizedStorable};
 use std::convert::Into;
@@ -45,12 +45,21 @@ macro_rules! tx {
     }
   };
 }
+
 tx!(WriteTx, MutTxnEnv);
+
 impl<'a> WriteTx<'a> {
   pub fn commit(self) -> std::result::Result<(), Error> {
     self.0.commit()
   }
 }
+/*
+impl<'a> Drop for WriteTx<'a> {
+  fn drop(&mut self) {
+    //  self.0.commit();
+  }
+}
+*/
 
 tx!(ReadTx, TxnEnv);
 
@@ -77,11 +86,13 @@ macro_rules! iter {
   };
 }
 
+// all TxDb
 impl<'a, K: 'a + Storable, V: 'a + Storable, T: Sized + LoadPage> TxDb<K, V, T> {
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
 }
 
+// write tx TxDb
 impl<'a, K: Storable, V: Storable, T: Sized + AllocPage> TxDb<K, V, T> {
   pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &mut *self.tx };
@@ -105,18 +116,19 @@ impl Tx {
   }
 
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
+    println!("block begin");
+    let mut w = Env::mut_txn_begin(&self.env).unwrap();
+    println!("block end");
+
     let tx = self.r().unwrap();
-    let _ = match tx.btree(id) {
-      Some(tree) => tree,
+    match tx.btree::<K, V>(id) {
       None => {
-        println!("block begin");
         let mut w = Env::mut_txn_begin(&self.env).unwrap();
-        println!("block end");
         let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
         w.set_root(id, tree.db);
         w.commit().unwrap();
-        tree
       }
+      _ => (),
     };
     Db {
       tx: &self,
@@ -142,7 +154,7 @@ impl Tx {
     let dir: PathBuf = dir.into();
     let filename = filename.unwrap_or_else(|| "sdb".into());
     let init_size = init_size.unwrap_or(1 << 21);
-    let max_tx = max_tx.unwrap_or(7);
+    let max_tx = max_tx.unwrap_or(8);
 
     create_dir_all(&dir).unwrap();
     Tx {
