@@ -53,7 +53,7 @@ impl<'a, K: Storable, V: Storable> TxDb<K, V, MutTxnEnv<'a>> {
     k: &K,
     v: &V,
   ) -> std::result::Result<bool, <MutTxn<&'a Env, ()> as LoadPage>::Error> {
-    let tx = self.tx as &mut MutTxnEnv;
+    let tx = unsafe { &mut *self.tx };
     btree::put(tx, &mut self.db, k, v)
   }
 }
