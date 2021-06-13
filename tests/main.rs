@@ -56,9 +56,9 @@ fn main() -> Result<()> {
   let tx = TX.w()?;
   let mut t1 = tx.db(&DB0);
 
-  t1.put(&1, &1);
-  t1.put(&1, &3);
-  t1.put(&1, &5);
+  t1.put(&1, &1)?;
+  t1.put(&1, &3)?;
+  t1.put(&1, &5)?;
 
   println!("# print all key");
   for entry in t1.iter(None, None)? {
