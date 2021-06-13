@@ -46,19 +46,17 @@ pub struct TxDb<K: Storable, V: Storable, Tx: ?Sized> {
   db: btree::Db<K, V>,
   tx: *mut Tx,
 }
-/*
-impl<'a, K: Storable, V: Storable> TxDb<K, V, MutTxn<&'a Env, ()>> {
+
+impl<'a, K: Storable, V: Storable> TxDb<K, V, MutTxnEnv<'a>> {
   pub fn put(
     &mut self,
     k: &K,
     v: &V,
   ) -> std::result::Result<bool, <MutTxn<&'a Env, ()> as LoadPage>::Error> {
-    let tx = &mut *self.tx as &mut MutTxn<&'a Env, ()>;
+    let tx = self.tx as &mut MutTxnEnv;
     btree::put(tx, &mut self.db, k, v)
   }
 }
-
-*/
 
 pub enum TxArgs<'a> {
   Filename(&'a str),
