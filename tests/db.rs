@@ -1,4 +1,3 @@
-#[macro_use]
 use lazy_static::lazy_static;
 use sdb::{Db, Tx};
 use std::env;
