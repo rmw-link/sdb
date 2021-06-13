@@ -1,4 +1,4 @@
-use sdb::Tx;
+use sdb::{Db, Tx};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -15,11 +15,11 @@ pub static DIR: String = env::current_exe()
 
 #[dynamic]
 pub static TX: Tx = {
-  //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
-
   let dir = Path::new(&*DIR).join("db");
 
   println!("DATABASE DIR {}", dir.display().to_string());
+
+  //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
 
   Tx::new(
     &dir,
@@ -30,3 +30,9 @@ pub static TX: Tx = {
     ],
   )
 };
+
+#[dynamic]
+pub static T1: Db<'static, u64, u64> = TX.db(0);
+
+#[dynamic]
+pub static T2: Db<'static, u64, u64> = TX.db(1);

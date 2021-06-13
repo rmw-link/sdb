@@ -6,12 +6,40 @@ use std::fs::create_dir_all;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 
-pub struct Tx(pub(crate) Env);
+pub struct Tx {
+  pub(crate) env: Env,
+}
 
 pub struct Db<'a, K: Storable, V: Storable> {
   tx: &'a Tx,
   pub id: usize,
   _kv: PhantomData<(K, V)>,
+}
+
+pub struct WriteTx<'a>(MutTxn<&'a Env, ()>);
+
+pub struct ReadTx<'a>(Txn<&'a Env>);
+
+macro_rules! Tx {
+  ($tx:ident) => {
+    impl<'a> $tx<'a> {
+      pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
+        self.0.root_db(id)
+      }
+      pub fn open<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> TxDb<K, V, Self> {
+        let db = self.db(db.id).unwrap();
+        TxDb { db, tx: self }
+      }
+    }
+  };
+}
+
+Tx!(WriteTx);
+Tx!(ReadTx);
+
+pub struct TxDb<K: Storable, V: Storable, Tx> {
+  db: btree::Db<K, V>,
+  tx: *mut Tx,
 }
 
 pub enum TxArgs<'a> {
@@ -20,25 +48,21 @@ pub enum TxArgs<'a> {
   MaxReadTx(usize),
 }
 
-type WriteTx<'a> = MutTxn<&'a Env, ()>;
-
-type ReadTx<'a> = Txn<&'a Env>;
-
 impl Tx {
   pub fn w(&self) -> Result<WriteTx> {
-    Ok(Env::mut_txn_begin(&self.0)?)
+    Ok(WriteTx(Env::mut_txn_begin(&self.env)?))
   }
 
   pub fn r(&self) -> Result<ReadTx> {
-    Ok(Env::txn_begin(&self.0)?)
+    Ok(ReadTx(Env::txn_begin(&self.env)?))
   }
 
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
     let tx = self.r().unwrap();
-    let _ = match tx.root_db(id) {
+    let _ = match tx.db(id) {
       Some(tree) => tree,
       None => {
-        let mut w = Env::mut_txn_begin(&self.0).unwrap();
+        let mut w = Env::mut_txn_begin(&self.env).unwrap();
         let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
         w.set_root(id, tree.db);
         w.commit().unwrap();
@@ -72,7 +96,9 @@ impl Tx {
     let max_tx = max_tx.unwrap_or(3);
 
     create_dir_all(&dir).unwrap();
-    Tx(Env::new(dir.join(filename), init_size, max_tx).unwrap())
+    Tx {
+      env: Env::new(dir.join(filename), init_size, max_tx).unwrap(),
+    }
   }
 }
 
@@ -214,7 +240,5 @@ pub trait R: Sized + LoadPage + RootDb {
   }
 }
 
-impl<'a> R for WriteTx<'a> {}
-impl<'a> R for ReadTx<'a> {}
 
 */

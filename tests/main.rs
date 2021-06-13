@@ -1,5 +1,5 @@
 mod db;
-use db::TX;
+use db::{T1, T2, TX};
 
 /*
 mod db {
@@ -54,6 +54,9 @@ pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
 #[test]
 fn main() -> Result<()> {
   let mut tx = TX.w()?;
+  let t1 = tx.open(&*T1);
+  let t2 = tx.open(&*T2);
+  //let t2 = tx.db(&*T2)?;
   /*
   let test = tx.db(&*db::TEST);
 
