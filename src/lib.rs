@@ -109,7 +109,9 @@ impl Tx {
     let _ = match tx.btree(id) {
       Some(tree) => tree,
       None => {
+        println!("block begin");
         let mut w = Env::mut_txn_begin(&self.env).unwrap();
+        println!("block end");
         let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
         w.set_root(id, tree.db);
         w.commit().unwrap();
