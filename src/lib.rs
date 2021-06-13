@@ -26,8 +26,11 @@ macro_rules! Tx {
       pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
         self.0.root_db(id)
       }
-      pub fn open<K: Storable, V: Storable>(&mut self, db: &Db<K, V>) -> TxDb<K, V, Self> {
-        let db = self.db(db.id).unwrap();
+      pub fn open<'b, K: 'b + Storable, V: 'b + Storable, T: Into<&'b Db<'b, K, V>>>(
+        &mut self,
+        db: T,
+      ) -> TxDb<K, V, Self> {
+        let db = self.db(db.into().id).unwrap();
         TxDb { db, tx: self }
       }
     }
