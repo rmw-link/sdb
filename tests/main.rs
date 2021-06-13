@@ -55,7 +55,10 @@ pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
 fn main() -> Result<()> {
   let tx = TX.w()?;
   let mut t1 = tx.db(&T1);
+
+  t1.put(&1, &1);
   t1.put(&1, &3);
+  t1.put(&1, &5);
 
   //let t2 = tx.db(&*T2)?;
   /*

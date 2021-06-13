@@ -1,4 +1,6 @@
 use anyhow::Result;
+use sanakirja::btree::page::Page;
+use sanakirja::btree::{BTreePage, Iter, RevIter};
 use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
 use std::convert::Into;
@@ -14,6 +16,11 @@ pub struct Db<'a, K: Storable, V: Storable> {
   tx: &'a Tx,
   pub id: usize,
   _kv: PhantomData<(K, V)>,
+}
+
+pub struct TxDb<K: Storable, V: Storable, T: Sized + LoadPage> {
+  db: btree::Db<K, V>,
+  tx: *mut T,
 }
 
 macro_rules! tx {
@@ -39,20 +46,44 @@ macro_rules! tx {
 type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
 type TxnEnv<'a> = Txn<&'a Env>;
 
+macro_rules! iter {
+  ($fn:ident, $real:ident, $cls:ident) => {
+    pub fn $fn<
+      'b,
+      P: BTreePage<K, V>,
+      OptionK: Into<Option<&'b K>>,
+      OptionV: Into<Option<&'b V>>,
+    >(
+      &self,
+      key: OptionK,
+      value: OptionV,
+    ) -> Result<$cls<T, K, V, P>, <T as LoadPage>::Error> {
+      let tx = unsafe { &*self.tx };
+      btree::$real(
+        tx,
+        &mut self.db,
+        match key.into() {
+          None => None,
+          Some(k) => match value.into() {
+            None => Some((k, None)),
+            Some(v) => Some((k, Some(v))),
+          },
+        },
+      )
+    }
+  };
+}
+
 tx!(WriteTx, MutTxnEnv);
 tx!(ReadTx, TxnEnv);
 
-pub struct TxDb<K: Storable, V: Storable, Tx: ?Sized> {
-  db: btree::Db<K, V>,
-  tx: *mut Tx,
+impl<'a, K: Storable, V: Storable, T: Sized + LoadPage> TxDb<K, V, T> {
+  iter!(iter, iter, Iter);
+  iter!(riter, rev_iter, RevIter);
 }
 
-impl<'a, K: Storable, V: Storable> TxDb<K, V, MutTxnEnv<'a>> {
-  pub fn put(
-    &mut self,
-    k: &K,
-    v: &V,
-  ) -> std::result::Result<bool, <MutTxn<&'a Env, ()> as LoadPage>::Error> {
+impl<'a, K: Storable, V: Storable, T: Sized + AllocPage> TxDb<K, V, T> {
+  pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &mut *self.tx };
     btree::put(tx, &mut self.db, k, v)
   }
@@ -139,35 +170,6 @@ impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K
 }
 */
 
-macro_rules! iter {
-  ($fn:ident, $real:ident, $cls:ident) => {
-    fn $fn<
-      'a,
-      K: 'a + Storable,
-      V: 'a + Storable,
-      P: BTreePage<K, V>,
-      OptionK: Into<Option<&'a K>>,
-      OptionV: Into<Option<&'a V>>,
-    >(
-      &self,
-      db: &Db_<K, V, P>,
-      key: OptionK,
-      value: OptionV,
-    ) -> Result<$cls<Self, K, V, P>, <Self as LoadPage>::Error> {
-      btree::$real(
-        self,
-        db,
-        match key.into() {
-          None => None,
-          Some(k) => match value.into() {
-            None => Some((k, None)),
-            Some(v) => Some((k, Some(v))),
-          },
-        },
-      )
-    }
-  };
-}
 
 pub struct ReadTxDb<'a, K: Storable, V: Storable, TX: R> {
   tx: &'a TX,
