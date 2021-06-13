@@ -20,8 +20,27 @@ pub struct WriteTx<'a>(MutTxn<&'a Env, ()>);
 
 pub struct ReadTx<'a>(Txn<&'a Env>);
 
+/*
+impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K, V>>>
+  for *const Db<'static, K, V>
+{
+  fn from(w: LesserLazy<Db<'static, K, V>>) -> *const Db<'static, K, V> {
+    &*w as *const Db<K, V>
+  }
+}*/
+
+use std::ops;
+
 macro_rules! Tx {
   ($tx:ident) => {
+    impl<'a, K: Storable, V: Storable> ops::Sub<&'a Db<'a, K, V>> for $tx<'a> {
+      type Output = TxDb<K, V, Self>;
+
+      fn sub(mut self, r: &'a Db<'a, K, V>) -> TxDb<K, V, Self> {
+        self.open(r)
+      }
+    }
+
     impl<'a> $tx<'a> {
       pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
         self.0.root_db(id)
@@ -115,11 +134,6 @@ pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
 
 
 
-impl<'a, K: Storable, V: Storable> From<&Db<'a, K, V>> for usize {
-  fn from(w: &Db<K, V>) -> usize {
-    w.id
-  }
-}
 
 /*
 impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K, V>>>

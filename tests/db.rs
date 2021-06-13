@@ -1,10 +1,12 @@
+#[macro_use]
+use lazy_static::lazy_static;
 use sdb::{Db, Tx};
-use static_init::dynamic;
 use std::env;
 use std::path::Path;
 
-#[dynamic]
-pub static DIR: String = env::current_exe()
+lazy_static! {
+
+pub static ref DIR: String = env::current_exe()
   .unwrap()
   .parent()
   .unwrap()
@@ -13,8 +15,7 @@ pub static DIR: String = env::current_exe()
   .display()
   .to_string();
 
-#[dynamic]
-pub static TX: Tx = {
+pub static ref TX: Tx = {
   let dir = Path::new(&*DIR).join("db");
 
   println!("DATABASE DIR {}", dir.display().to_string());
@@ -31,8 +32,8 @@ pub static TX: Tx = {
   )
 };
 
-#[dynamic]
-pub static T1: Db<'static, u64, u64> = TX.db(0);
+pub static ref T1: Db<'static, u64, u64> = TX.db(0);
 
-#[dynamic]
-pub static T2: Db<'static, u64, u64> = TX.db(1);
+pub static ref T2: Db<'static, u64, u64> = TX.db(1);
+
+}
