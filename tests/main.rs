@@ -1,10 +1,7 @@
-use anyhow::Result;
-use sdb::{direct_repr, Commit, Storable, UnsizedStorable, R, W};
+mod db;
+use db::TX;
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-struct Hash([u8; 32]);
-direct_repr!(Hash);
-
+/*
 mod db {
   use sdb::{Db, Sdb};
   use static_init::dynamic;
@@ -22,7 +19,7 @@ mod db {
     .to_string();
 
   #[dynamic]
-  pub static DB: Sdb = {
+  pub static TX: Sdb = {
     //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
     let dir = Path::new(&*DIR).join("db");
     println!("DATABASE DIR {}", dir.display().to_string());
@@ -30,14 +27,25 @@ mod db {
       &dir,
       &[
         //MaxTx(3),
-        //Filename("test"),
+        //Filename("sdb"),
         //InitSize(1<<21),
       ],
     )
   };
+
   #[dynamic]
-  pub static TEST: Db<'static, u64, u64> = DB.db(0);
+  pub static TEST: Db<'static, u64, u64> = TX.db(0);
 }
+
+use db::TX;
+use sdb::{direct_repr, Commit, Storable, UnsizedStorable, R};
+
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+struct Hash([u8; 32]);
+direct_repr!(Hash);
+*/
+
+use anyhow::Result;
 /*
 #[dynamic]
 pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
@@ -45,46 +53,59 @@ pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
 
 #[test]
 fn main() -> Result<()> {
-  let mut tx = db::DB.w()?;
-  let mut tree = tx.tree(&*db::TEST);
+  let mut tx = TX.w()?;
+  /*
+  let test = tx.db(&*db::TEST);
 
-  tx.put(&mut tree, &1, &1)?;
-  tx.put(&mut tree, &1, &2)?;
-  tx.put(&mut tree, &2, &0)?;
-  tx.put(&mut tree, &2, &1)?;
-  tx.put(&mut tree, &2, &2)?;
+  test.put(&mut tx, &1, &1)?;
+  */
+  /*
+  test.put(&mut tx, &1, &2)?;
+  tx.put(&mut test.db, &1, &1)?;
+  tx.put(&mut test.db, &1, &1)?;
+  tx.put(&mut test, &1, &2)?;
+  tx.put(&mut test, &2, &0)?;
+  tx.put(&mut test, &2, &1)?;
+  tx.put(&mut test, &2, &2)?;
 
-  println!("# get one key > {:?}", tx.get(&tree, &1)?);
+  println!("# get one key > {:?}", test.get(&1)?);
+  println!("# get one key > {:?}", tx.get(&test, &1)?);
+  */
 
-  println!("# exist 1,2 > {:?}", tx.exist(&tree, &1, &2)?);
+  /*
 
-  println!("# exist 1,3 > {:?}", tx.exist(&tree, &1, &3)?);
+    println!("# get one key > {:?}", tx.get(&test, &1)?);
 
-  println!("# print all key");
-  for entry in tx.iter(&tree, None, None)? {
-    let (k, v) = entry?;
-    println!("> {:?} {:?}", k, v)
-  }
+    println!("# exist 1,2 > {:?}", tx.exist(&test, &1, &2)?);
 
-  println!("# print key greater or equal 2");
-  for entry in tx.iter(&tree, &2, None)? {
-    let (k, v) = entry?;
-    println!("> {:?} {:?}", k, v)
-  }
+    println!("# exist 1,3 > {:?}", tx.exist(&test, &1, &3)?);
 
-  println!("# print key greater or equal 2 and value greater or equal 1");
-  for entry in tx.iter(&tree, &2, &1)? {
-    let (k, v) = entry?;
-    println!("> {:?} {:?}", k, v)
-  }
+    println!("# print all key");
+    for entry in tx.iter(&test, None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
 
-  println!("# print key less or equal 2 and value less or equal 1");
-  for entry in tx.riter(&tree, &1, &2)? {
-    let (k, v) = entry?;
-    println!("> {:?} {:?}", k, v)
-  }
+    println!("# print key greater or equal 2");
+    for entry in tx.iter(&test, &2, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
 
-  tx.commit()?;
+    println!("# print key greater or equal 2 and value greater or equal 1");
+    for entry in tx.iter(&test, &2, &1)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    println!("# print key less or equal 2 and value less or equal 1");
+    for entry in tx.riter(&test, &1, &2)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    tx.commit()?;
+  */
 
   /*
      W!(
