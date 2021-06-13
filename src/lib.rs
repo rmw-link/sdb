@@ -92,7 +92,7 @@ impl<'a, K: Storable, V: Storable, T: Sized + AllocPage> TxDb<K, V, T> {
 pub enum TxArgs<'a> {
   Filename(&'a str),
   InitSize(u64),
-  MaxReadTx(usize),
+  MaxTx(usize),
 }
 
 impl Tx {
@@ -109,9 +109,7 @@ impl Tx {
     let _ = match tx.btree(id) {
       Some(tree) => tree,
       None => {
-        println!("blocked begin");
         let mut w = Env::mut_txn_begin(&self.env).unwrap();
-        println!("blocked end");
         let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
         w.set_root(id, tree.db);
         w.commit().unwrap();
@@ -135,14 +133,14 @@ impl Tx {
       match arg {
         Filename(i) => filename = i.to_string().into(),
         InitSize(i) => init_size = (*i).into(),
-        MaxReadTx(i) => max_tx = (*i).into(),
+        MaxTx(i) => max_tx = (*i).into(),
       }
     }
 
     let dir: PathBuf = dir.into();
     let filename = filename.unwrap_or_else(|| "sdb".into());
     let init_size = init_size.unwrap_or(1 << 21);
-    let max_tx = max_tx.unwrap_or(3);
+    let max_tx = max_tx.unwrap_or(7);
 
     create_dir_all(&dir).unwrap();
     Tx {
