@@ -16,53 +16,49 @@ pub struct Db<'a, K: Storable, V: Storable> {
   _kv: PhantomData<(K, V)>,
 }
 
-pub struct WriteTx<'a>(MutTxn<&'a Env, ()>);
-
-pub struct ReadTx<'a>(Txn<&'a Env>);
-
-/*
-impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K, V>>>
-  for *const Db<'static, K, V>
-{
-  fn from(w: LesserLazy<Db<'static, K, V>>) -> *const Db<'static, K, V> {
-    &*w as *const Db<K, V>
-  }
-}*/
-
-use std::ops;
-
-macro_rules! Tx {
-  ($tx:ident) => {
-    impl<'a, K: Storable, V: Storable> ops::Sub<&'a Db<'a, K, V>> for $tx<'a> {
-      type Output = TxDb<K, V, Self>;
-
-      fn sub(mut self, r: &'a Db<'a, K, V>) -> TxDb<K, V, Self> {
-        self.open(r)
-      }
-    }
-
-    impl<'a> $tx<'a> {
-      pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
+macro_rules! tx {
+  ($cls:ident, $tx:tt) => {
+    pub struct $cls<'a>($tx<'a>);
+    impl<'a> $cls<'a> {
+      pub fn btree<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
         self.0.root_db(id)
       }
-      pub fn open<'b, K: 'b + Storable, V: 'b + Storable, T: Into<&'b Db<'b, K, V>>>(
-        &mut self,
-        db: T,
-      ) -> TxDb<K, V, Self> {
-        let db = self.db(db.into().id).unwrap();
-        TxDb { db, tx: self }
+      pub fn db<'b, K: 'b + Storable, V: 'b + Storable>(
+        &self,
+        db: &Db<'b, K, V>,
+      ) -> TxDb<K, V, $tx<'a>> {
+        let db = self.btree(db.id).unwrap();
+        let tx = &self.0 as *const $tx<'a>;
+        let tx = tx as *mut $tx<'a>;
+        TxDb { db, tx }
       }
     }
   };
 }
 
-Tx!(WriteTx);
-Tx!(ReadTx);
+type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
+type TxnEnv<'a> = Txn<&'a Env>;
 
-pub struct TxDb<K: Storable, V: Storable, Tx> {
+tx!(WriteTx, MutTxnEnv);
+tx!(ReadTx, TxnEnv);
+
+pub struct TxDb<K: Storable, V: Storable, Tx: ?Sized> {
   db: btree::Db<K, V>,
   tx: *mut Tx,
 }
+/*
+impl<'a, K: Storable, V: Storable> TxDb<K, V, MutTxn<&'a Env, ()>> {
+  pub fn put(
+    &mut self,
+    k: &K,
+    v: &V,
+  ) -> std::result::Result<bool, <MutTxn<&'a Env, ()> as LoadPage>::Error> {
+    let tx = &mut *self.tx as &mut MutTxn<&'a Env, ()>;
+    btree::put(tx, &mut self.db, k, v)
+  }
+}
+
+*/
 
 pub enum TxArgs<'a> {
   Filename(&'a str),
@@ -81,7 +77,7 @@ impl Tx {
 
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
     let tx = self.r().unwrap();
-    let _ = match tx.db(id) {
+    let _ = match tx.btree(id) {
       Some(tree) => tree,
       None => {
         let mut w = Env::mut_txn_begin(&self.env).unwrap();
