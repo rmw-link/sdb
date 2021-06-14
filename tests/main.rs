@@ -1,6 +1,7 @@
 mod db;
 use anyhow::Result;
 use db::TX;
+//use db::{DB0, TX};
 use sdb::Db;
 
 #[test]
