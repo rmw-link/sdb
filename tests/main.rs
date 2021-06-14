@@ -1,60 +1,43 @@
-mod db;
-use db::{DB0, TX};
+use sdb::{Db, Tx};
+use static_init::dynamic;
+use std::env;
+use std::path::Path;
 
-/*
-mod db {
-  use sdb::{Db, Sdb};
-  use static_init::dynamic;
-  use std::env;
-  use std::path::Path;
+#[dynamic]
+pub static DIR: String = env::current_exe()
+  .unwrap()
+  .parent()
+  .unwrap()
+  .parent()
+  .unwrap()
+  .display()
+  .to_string();
 
-  #[dynamic]
-  pub static DIR: String = env::current_exe()
-    .unwrap()
-    .parent()
-    .unwrap()
-    .parent()
-    .unwrap()
-    .display()
-    .to_string();
+#[dynamic]
+pub static TX: Tx = {
+  let dir = Path::new(&*DIR).join("db");
 
-  #[dynamic]
-  pub static TX: Sdb = {
-    //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
-    let dir = Path::new(&*DIR).join("db");
-    println!("DATABASE DIR {}", dir.display().to_string());
-    Sdb::new(
-      &dir,
-      &[
-        //MaxTx(3),
-        //Filename("sdb"),
-        //InitSize(1<<21),
-      ],
-    )
-  };
+  println!("DATABASE DIR {}", dir.display().to_string());
 
-  #[dynamic]
-  pub static TEST: Db<'static, u64, u64> = TX.db(0);
-}
+  //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
 
-use db::TX;
-use sdb::{direct_repr, Commit, Storable, UnsizedStorable, R};
-
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-struct Hash([u8; 32]);
-direct_repr!(Hash);
-*/
+  Tx::new(
+    &dir,
+    &[
+      //MaxTx(3),
+      //Filename("sdb"),
+      //InitSize(1<<21),
+    ],
+  )
+};
 
 use anyhow::Result;
-/*
-#[dynamic]
-pub static DB_TEST2: &Db<'static, u64, u64> = &*DB_TEST;
-*/
 
 #[test]
 fn main() -> Result<()> {
+  let DB0: Db<u64, u64> = TX.db(0);
   let tx = TX.w()?;
-  let mut t1 = tx.db(&DB0);
+  let t1 = tx.db(&DB0);
 
   t1.put(&1, &1)?;
   t1.put(&1, &3)?;
@@ -65,7 +48,7 @@ fn main() -> Result<()> {
     let (k, v) = entry?;
     println!("> {:?} {:?}", k, v)
   }
-  tx.commit()?;
+  //tx.commit()?;
 
   //let t2 = tx.db(&*T2)?;
   /*

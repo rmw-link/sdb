@@ -48,18 +48,18 @@ macro_rules! tx {
 
 tx!(WriteTx, MutTxnEnv);
 
+/*
 impl<'a> WriteTx<'a> {
   pub fn commit(self) -> std::result::Result<(), Error> {
     self.0.commit()
   }
 }
-/*
+*/
 impl<'a> Drop for WriteTx<'a> {
   fn drop(&mut self) {
-    //  self.0.commit();
+    self.0.commit();
   }
 }
-*/
 
 tx!(ReadTx, TxnEnv);
 
@@ -116,10 +116,6 @@ impl Tx {
   }
 
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
-    println!("block begin");
-    let mut w = Env::mut_txn_begin(&self.env).unwrap();
-    println!("block end");
-
     let tx = self.r().unwrap();
     match tx.btree::<K, V>(id) {
       None => {
