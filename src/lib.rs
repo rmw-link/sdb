@@ -6,6 +6,8 @@ pub use sanakirja::{direct_repr, Commit, Error, Storable, UnsizedStorable};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;
+use std::mem;
+use std::mem::ManuallyDrop;
 use std::path::PathBuf;
 
 type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
@@ -25,10 +27,11 @@ pub struct TxDb<K: Storable, V: Storable, T: Sized + LoadPage> {
   db: btree::Db<K, V>,
   tx: *mut T,
 }
+pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
+pub struct ReadTx<'a>(TxnEnv<'a>);
 
 macro_rules! tx {
   ($cls:ident, $tx:tt) => {
-    pub struct $cls<'a>($tx<'a>);
     impl<'a> $cls<'a> {
       pub fn btree<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
         self.0.root_db(id)
@@ -37,31 +40,38 @@ macro_rules! tx {
         &self,
         db: &Db<'b, K, V>,
       ) -> TxDb<K, V, $tx<'a>> {
-        let db = self.btree(db.id).unwrap();
-        let tx = &self.0 as *const $tx<'a>;
-        let tx = tx as *mut $tx<'a>;
-        TxDb { db, tx }
+        TxDb {
+          db: self.btree(db.id).unwrap(),
+          tx: self.ptr() as *mut $tx<'a>,
+        }
       }
     }
   };
 }
 
 tx!(WriteTx, MutTxnEnv);
+tx!(ReadTx, TxnEnv);
 
-/*
-impl<'a> WriteTx<'a> {
-  pub fn commit(self) -> std::result::Result<(), Error> {
-    self.0.commit()
+impl<'a> ReadTx<'a> {
+  pub fn ptr(&self) -> *const TxnEnv<'a> {
+    &self.0
   }
 }
-*/
+
+impl<'a> WriteTx<'a> {
+  pub fn ptr(&self) -> *const MutTxnEnv<'a> {
+    &*self.0
+  }
+}
+
 impl<'a> Drop for WriteTx<'a> {
   fn drop(&mut self) {
-    self.0.commit();
+    let tx = mem::MaybeUninit::<MutTxnEnv>::uninit();
+    let tx = mem::replace(&mut *self.0, unsafe { tx.assume_init() });
+    tx.commit().unwrap();
+    println!("auto commit");
   }
 }
-
-tx!(ReadTx, TxnEnv);
 
 macro_rules! iter {
   ($fn:ident, $real:ident, $cls:ident) => {
@@ -108,7 +118,7 @@ pub enum TxArgs<'a> {
 
 impl Tx {
   pub fn w(&self) -> Result<WriteTx> {
-    Ok(WriteTx(Env::mut_txn_begin(&self.env)?))
+    Ok(WriteTx(ManuallyDrop::new(Env::mut_txn_begin(&self.env)?)))
   }
 
   pub fn r(&self) -> Result<ReadTx> {

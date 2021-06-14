@@ -37,7 +37,7 @@ use anyhow::Result;
 fn main() -> Result<()> {
   let DB0: Db<u64, u64> = TX.db(0);
   let tx = TX.w()?;
-  let t1 = tx.db(&DB0);
+  let mut t1 = tx.db(&DB0);
 
   t1.put(&1, &1)?;
   t1.put(&1, &3)?;
