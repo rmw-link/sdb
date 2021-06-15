@@ -10,7 +10,7 @@ sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
 
 I wrapper it for easy use .
 
-First global define db , see [tests/db.rs](./tests/db.rs)
+First step : static define db , see [tests/db.rs](./tests/db.rs)
 
 ```rust
 use sdb::{direct_repr, Db, Storable, Tx, UnsizedStorable};
@@ -59,7 +59,7 @@ pub static DB1: Db<'static, u64, Hash> = TX.db(1);
 
 ```
 
-Second use it , see [tests/main.rs](./tests/main.rs)
+Second step : use it , see [tests/main.rs](./tests/main.rs)
 
 ```rust
 mod db;
