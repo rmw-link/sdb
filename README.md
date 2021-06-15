@@ -110,6 +110,8 @@ fn main() -> Result<()> {
 
     let mut db2 = tx.db(&DB2);
     db2.put(&1, &[1, 2, 3][..])?;
+    db2.put(&2, &[4, 6][..])?;
+
     println!("- print all key db2");
     for entry in db2.iter(None, None)? {
       let (k, v) = entry?;
