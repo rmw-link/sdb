@@ -17,7 +17,7 @@ see [Sanakirja 1.0 (pure Rust transactional on-disk key-value store) released!](
 
 
 
-I wrapper it for easy use .
+[I](https://github.com/rmw-link/sdb) wrapper it for easy use .
 
 First step : static define db , see [tests/db.rs](./tests/db.rs)
 
