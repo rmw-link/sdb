@@ -1,8 +1,8 @@
 use anyhow::Result;
 pub use sanakirja::btree::page::Page;
-use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
+use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
 pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
-use sanakirja::{AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
+use sanakirja::{Env, LoadPage, MutTxn, RootDb, Txn};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;
@@ -17,22 +17,24 @@ pub struct Tx {
   pub(crate) env: Env,
 }
 
-pub struct Db_<'a, K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>> {
+pub struct DbPage<'a, K: ?Sized, V: ?Sized, P> {
   tx: &'a Tx,
   pub id: usize,
-  _kvp: PhantomData<(K, V, P)>,
+  _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
 }
 
-pub type Db<'a, K, V> = Db_<'a, K, V, Page<K, V>>;
-pub type DbU<'a, K, V> = Db_<'a, K, V, btree::page_unsized::Page<K, V>>;
+type UP<K, V> = btree::page_unsized::Page<K, V>;
+
+pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>>;
+pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>>;
 
 pub struct TxDb<
-  K: Storable + PartialEq,
-  V: PartialEq + Storable,
-  T: Sized + LoadPage,
+  K: Storable + PartialEq + ?Sized,
+  V: Storable + PartialEq + ?Sized,
+  T: LoadPage,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
 > {
-  db: btree::Db_<K, V, P>,
+  db: Db_<K, V, P>,
   id: usize,
   tx: *mut T,
 }
@@ -44,12 +46,12 @@ macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {
       pub fn db<
-        K: Storable + PartialEq,
-        V: Storable + PartialEq,
+        K: Storable + PartialEq + ?Sized,
+        V: Storable + PartialEq + ?Sized,
         P: BTreeMutPage<K, V> + BTreePage<K, V>,
       >(
         &self,
-        db: &Db_<K, V, P>,
+        db: &DbPage<K, V, P>,
       ) -> TxDb<K, V, $tx<'a>, P> {
         TxDb {
           id: db.id,
@@ -68,15 +70,19 @@ impl<'a> ReadTx<'a> {
   pub fn ptr(&self) -> *const TxnEnv<'a> {
     &self.0
   }
-  pub fn btree<K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
+  pub fn btree<
+    K: Storable + ?Sized,
+    V: Storable + ?Sized,
+    P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  >(
     &self,
     id: usize,
-  ) -> btree::Db_<K, V, P> {
+  ) -> Db_<K, V, P> {
     let tx = &self.0;
     match tx.root_db::<K, V, P>(id) {
       None => {
         let mut w = Env::mut_txn_begin(tx.env_borrow()).unwrap();
-        let tree = btree::create_db_::<_, K, V, P>(&mut w).unwrap();
+        let tree = create_db_::<_, K, V, P>(&mut w).unwrap();
         w.set_root(id, tree.db);
         w.commit().unwrap();
         tree
@@ -91,16 +97,20 @@ impl<'a> WriteTx<'a> {
     &*self.0
   }
 
-  pub fn btree<K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
+  pub fn btree<
+    K: Storable + ?Sized,
+    V: Storable + ?Sized,
+    P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  >(
     &self,
     id: usize,
-  ) -> btree::Db_<K, V, P> {
+  ) -> Db_<K, V, P> {
     let tx = self.ptr() as *mut MutTxnEnv<'a>;
     let tx = unsafe { &mut *tx };
 
     match tx.root_db::<K, V, P>(id) {
       None => {
-        let tree = btree::create_db_::<_, K, V, P>(tx).unwrap();
+        let tree = create_db_::<_, K, V, P>(tx).unwrap();
         tx.set_root(id, tree.db);
         tree
       }
@@ -143,9 +153,9 @@ macro_rules! iter {
 // all TxDb
 impl<
     'a,
-    K: 'a + PartialEq + Storable,
-    V: 'a + PartialEq + Storable,
-    T: 'a + Sized + LoadPage,
+    K: 'a + PartialEq + Storable + ?Sized,
+    V: 'a + PartialEq + Storable + ?Sized,
+    T: 'a + LoadPage,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > TxDb<K, V, T, P>
 {
@@ -208,8 +218,8 @@ macro_rules! set_root {
 // write tx TxDb
 impl<
     'a,
-    K: 'a + Storable + PartialEq,
-    V: 'a + PartialEq + Storable,
+    K: 'a + Storable + PartialEq + ?Sized,
+    V: 'a + Storable + PartialEq + ?Sized,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > TxDb<K, V, MutTxnEnv<'a>, P>
 {
@@ -245,11 +255,11 @@ impl Tx {
     Ok(ReadTx(Env::txn_begin(&self.env)?))
   }
 
-  pub fn db<K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
+  pub fn db<K: Storable + ?Sized, V: Storable + ?Sized, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
     &self,
     id: usize,
-  ) -> Db_<K, V, P> {
-    Db_ {
+  ) -> DbPage<K, V, P> {
+    DbPage {
       tx: &self,
       id: id,
       _kvp: PhantomData,
@@ -276,8 +286,11 @@ impl Tx {
     let max_tx = max_tx.unwrap_or(3);
 
     create_dir_all(&dir).unwrap();
+
+    let file = dir.join(filename);
+
     Tx {
-      env: Env::new(dir.join(filename), init_size, max_tx).unwrap(),
+      env: Env::new(&file, init_size, max_tx).unwrap(),
     }
   }
 }

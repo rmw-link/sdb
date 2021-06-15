@@ -41,3 +41,6 @@ direct_repr!(Hash);
 
 #[dynamic]
 pub static DB1: Db<'static, u64, Hash> = TX.db(1);
+
+#[dynamic]
+pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);

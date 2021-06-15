@@ -66,6 +66,9 @@ direct_repr!(Hash);
 #[dynamic]
 pub static DB1: Db<'static, u64, Hash> = TX.db(1);
 
+#[dynamic]
+pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
+
 ```
 
 Second step : use it , see [tests/main.rs](./tests/main.rs)
@@ -73,7 +76,7 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 ```rust
 mod db;
 use anyhow::Result;
-use db::{DB0, TX};
+use db::{DB0, DB2, TX};
 
 #[test]
 fn main() -> Result<()> {
@@ -89,7 +92,7 @@ fn main() -> Result<()> {
     db0.put(&2, &1)?;
     db0.put(&3, &9)?;
 
-    println!("- print all key");
+    println!("- print all key db0");
     for entry in db0.iter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
@@ -104,6 +107,15 @@ fn main() -> Result<()> {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }
+
+    let mut db2 = tx.db(&DB2);
+    db2.put(&1, &[1, 2, 3][..]);
+    println!("- print all key db2");
+    for entry in db2.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
     //write tx will auto commit when drop
   }
   {
