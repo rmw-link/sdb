@@ -103,9 +103,9 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
-    println!("- delete key 2 the first : {}", db0.rm_one(&2, None)?);
-    println!("- delete 2,5 : {}", db0.rm_one(&2, &5)?);
-    println!("- delete key 5 the first : {}", db0.rm_one(&5, None)?);
+    println!("- delete key 2 the first : {}", db0.rm1(&2, None)?);
+    println!("- delete 2,5 : {}", db0.rm1(&2, &5)?);
+    println!("- delete key 5 the first : {}", db0.rm1(&5, None)?);
 
     println!("- print all key");
     for entry in db0.iter(None, None)? {

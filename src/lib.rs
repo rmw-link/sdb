@@ -254,7 +254,7 @@ impl<
     set_root!(self, put, k, v)
   }
 
-  pub fn rm_one<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
+  pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
     &mut self,
     k: IntoK,
     v: IntoV,
