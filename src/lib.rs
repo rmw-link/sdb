@@ -1,7 +1,7 @@
 use anyhow::Result;
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
-pub use sanakirja::{btree, direct_repr, Commit, Error, SetRoot, Storable, UnsizedStorable};
+pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
 use sanakirja::{AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 use std::convert::Into;
 use std::fs::create_dir_all;
@@ -114,7 +114,6 @@ impl<'a> Drop for WriteTx<'a> {
     let tx = mem::MaybeUninit::<MutTxnEnv>::uninit();
     let tx = mem::replace(&mut *self.0, unsafe { tx.assume_init() });
     tx.commit().unwrap();
-    println!("auto commited");
   }
 }
 
@@ -193,35 +192,41 @@ impl<
   }
 }
 
+macro_rules! set_root {
+  ($self:ident, $fn: ident, $k:ident, $v:ident) => {{
+    let tx = unsafe { &mut *$self.tx };
+    let db = $self.db.db;
+    let r = btree::$fn(tx, &mut $self.db, $k.into(), $v.into());
+    let db_now = $self.db.db;
+    if db_now != db {
+      tx.set_root($self.id, db_now);
+    }
+    r
+  }};
+}
+
 // write tx TxDb
 impl<
     'a,
     K: 'a + Storable + PartialEq,
     V: 'a + PartialEq + Storable,
-    T: Sized + AllocPage + core::fmt::Debug + SetRoot,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  > TxDb<K, V, T, P>
+  > TxDb<K, V, MutTxnEnv<'a>, P>
 {
   pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
     &mut self,
     k: IntoK,
     v: IntoV,
-  ) -> std::result::Result<bool, <T as LoadPage>::Error> {
-    let mut tx = unsafe { &mut *self.tx };
-    let r = btree::put(tx, &mut self.db, k.into(), v.into());
-    tx.set_root(self.id, self.db.db);
-    r
+  ) -> std::result::Result<bool, sanakirja::Error> {
+    set_root!(self, put, k, v)
   }
 
   pub fn del<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
     &mut self,
     k: IntoK,
     v: IntoV,
-  ) -> Result<bool, <T as LoadPage>::Error> {
-    let tx = unsafe { &mut *self.tx };
-    let r = btree::del(tx, &mut self.db, k.into(), v.into());
-    tx.set_root(self.id, self.db.db);
-    r
+  ) -> Result<bool, sanakirja::Error> {
+    set_root!(self, del, k, v)
   }
 }
 
