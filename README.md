@@ -84,7 +84,7 @@ use db::{Hash, DB0, DB1, DB2, DB3, TX};
 #[test]
 fn main() -> Result<()> {
   println!("direct put");
-  DB0.put(&0, &0);
+  DB0.put(&0, &0)?;
 
   {
     println!("# write transaction");
@@ -103,9 +103,9 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
-    println!("- delete key 2 the first : {}", db0.del(&2, None)?);
-    println!("- delete 2,5 : {}", db0.del(&2, &5)?);
-    println!("- delete key 5 the first : {}", db0.del(&5, None)?);
+    println!("- delete key 2 the first : {}", db0.rm_one(&2, None)?);
+    println!("- delete 2,5 : {}", db0.rm_one(&2, &5)?);
+    println!("- delete key 5 the first : {}", db0.rm_one(&5, None)?);
 
     println!("- print all key");
     for entry in db0.iter(None, None)? {
