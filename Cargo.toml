@@ -9,10 +9,10 @@ license = "AGPL-3.0-or-later"
 description="a user-friendly wrapper for sanakirja database"
 
 [dependencies]
-anyhow = "1.0.40"
 sanakirja = "1.2.4"
 #sanakirja = {git="https://github.com/gcxfd/sanakirja.git"}
 
 [dev-dependencies]
 static_init= {git="https://gitlab.com/vkahl/static_init.git"}
 lazy_static = "1.4"
+anyhow = "1.0.40"

@@ -1,4 +1,3 @@
-use anyhow::Result;
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
 pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
@@ -9,6 +8,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::mem::ManuallyDrop;
 use std::path::PathBuf;
+use std::result::Result;
 
 type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
 type TxnEnv<'a> = Txn<&'a Env>;
@@ -17,10 +17,33 @@ pub struct Tx {
   pub(crate) env: Env,
 }
 
-pub struct DbPage<'a, K: ?Sized, V: ?Sized, P> {
+pub struct DbPage<
+  'a,
+  K: ?Sized + Storable + PartialEq,
+  V: ?Sized + Storable + PartialEq,
+  P: BTreeMutPage<K, V> + BTreePage<K, V>,
+> {
   tx: &'a Tx,
   pub id: usize,
   _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
+}
+
+impl<
+    'a,
+    K: ?Sized + Storable + PartialEq,
+    V: ?Sized + Storable + PartialEq,
+    P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  > DbPage<'a, K, V, P>
+{
+  pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
+    &self,
+    k: IntoK,
+    v: IntoV,
+  ) -> Result<bool, Error> {
+    let tx = self.tx.w()?;
+    let mut db = tx.db(&self);
+    db.put(k.into(), v.into())
+  }
 }
 
 type UP<K, V> = btree::page_unsized::Page<K, V>;
@@ -227,7 +250,7 @@ impl<
     &mut self,
     k: IntoK,
     v: IntoV,
-  ) -> std::result::Result<bool, sanakirja::Error> {
+  ) -> std::result::Result<bool, Error> {
     set_root!(self, put, k, v)
   }
 
@@ -235,7 +258,7 @@ impl<
     &mut self,
     k: IntoK,
     v: IntoV,
-  ) -> Result<bool, sanakirja::Error> {
+  ) -> Result<bool, Error> {
     set_root!(self, del, k, v)
   }
 }
@@ -247,15 +270,19 @@ pub enum TxArgs<'a> {
 }
 
 impl Tx {
-  pub fn w(&self) -> Result<WriteTx> {
+  pub fn w(&self) -> Result<WriteTx, Error> {
     Ok(WriteTx(ManuallyDrop::new(Env::mut_txn_begin(&self.env)?)))
   }
 
-  pub fn r(&self) -> Result<ReadTx> {
+  pub fn r(&self) -> Result<ReadTx, Error> {
     Ok(ReadTx(Env::txn_begin(&self.env)?))
   }
 
-  pub fn db<K: Storable + ?Sized, V: Storable + ?Sized, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
+  pub fn db<
+    K: Storable + PartialEq + ?Sized,
+    V: Storable + PartialEq + ?Sized,
+    P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  >(
     &self,
     id: usize,
   ) -> DbPage<K, V, P> {

@@ -4,6 +4,9 @@ use db::{Hash, DB0, DB1, DB2, DB3, TX};
 
 #[test]
 fn main() -> Result<()> {
+  println!("direct put");
+  DB0.put(&0, &0);
+
   {
     println!("# write transaction");
     let tx = TX.w()?;
