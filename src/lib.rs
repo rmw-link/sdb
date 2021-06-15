@@ -1,8 +1,8 @@
 use anyhow::Result;
 use sanakirja::btree::page::Page;
 use sanakirja::btree::{Iter, RevIter};
-use sanakirja::{btree, AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
-pub use sanakirja::{direct_repr, Commit, Error, Storable, UnsizedStorable};
+pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
+use sanakirja::{AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;

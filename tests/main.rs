@@ -13,7 +13,7 @@ fn main() -> Result<()> {
     db0.put(&1, &3)?;
 
     db0.put(&2, &2)?;
-    // db0.put(&2, &1)?;
+    db0.put(&2, &1)?;
 
     println!("## print all key");
     for entry in db0.iter(None, None)? {
