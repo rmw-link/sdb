@@ -27,21 +27,19 @@ pub struct TxDb<K: Storable, V: Storable, T: Sized + LoadPage> {
   db: btree::Db<K, V>,
   tx: *mut T,
 }
+
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);
 
 macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {
-      pub fn btree<K: Storable, V: Storable>(&self, id: usize) -> Option<btree::Db<K, V>> {
-        self.0.root_db(id)
-      }
       pub fn db<'b, K: 'b + Storable, V: 'b + Storable>(
         &self,
         db: &Db<'b, K, V>,
       ) -> TxDb<K, V, $tx<'a>> {
         TxDb {
-          db: self.btree(db.id).unwrap(),
+          db: self.btree(db.id),
           tx: self.ptr() as *mut $tx<'a>,
         }
       }
@@ -56,11 +54,38 @@ impl<'a> ReadTx<'a> {
   pub fn ptr(&self) -> *const TxnEnv<'a> {
     &self.0
   }
+  pub fn btree<K: Storable, V: Storable>(&self, id: usize) -> btree::Db<K, V> {
+    let tx = &self.0;
+    match tx.root_db::<K, V, Page<K, V>>(id) {
+      None => {
+        let mut w = Env::mut_txn_begin(tx.env_borrow()).unwrap();
+        let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
+        w.set_root(id, tree.db);
+        w.commit().unwrap();
+        tree
+      }
+      Some(tree) => tree,
+    }
+  }
 }
 
 impl<'a> WriteTx<'a> {
   pub fn ptr(&self) -> *const MutTxnEnv<'a> {
     &*self.0
+  }
+
+  pub fn btree<K: Storable, V: Storable>(&self, id: usize) -> btree::Db<K, V> {
+    let tx = self.ptr() as *mut MutTxnEnv<'a>;
+    let tx = unsafe { &mut *tx };
+
+    match tx.root_db::<K, V, Page<K, V>>(id) {
+      None => {
+        let tree = btree::create_db::<_, K, V>(tx).unwrap();
+        tx.set_root(id, tree.db);
+        tree
+      }
+      Some(tree) => tree,
+    }
   }
 }
 
@@ -126,16 +151,6 @@ impl Tx {
   }
 
   pub fn db<K: Storable, V: Storable>(&self, id: usize) -> Db<K, V> {
-    let tx = self.r().unwrap();
-    match tx.btree::<K, V>(id) {
-      None => {
-        let mut w = Env::mut_txn_begin(&self.env).unwrap();
-        let tree = btree::create_db::<_, K, V>(&mut w).unwrap();
-        w.set_root(id, tree.db);
-        w.commit().unwrap();
-      }
-      _ => (),
-    };
     Db {
       tx: &self,
       id: id,
@@ -160,7 +175,7 @@ impl Tx {
     let dir: PathBuf = dir.into();
     let filename = filename.unwrap_or_else(|| "sdb".into());
     let init_size = init_size.unwrap_or(1 << 21);
-    let max_tx = max_tx.unwrap_or(8);
+    let max_tx = max_tx.unwrap_or(3);
 
     create_dir_all(&dir).unwrap();
     Tx {

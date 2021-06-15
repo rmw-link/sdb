@@ -145,9 +145,7 @@ dependencies = [
 
 [[package]]
 name = "sanakirja"
-version = "1.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bbeaf95d57d98d57cc2f7f58bc0028e2e5a49e446bedb0288ed755238b60c32"
+version = "1.2.1"
 dependencies = [
  "fs2",
  "log",
@@ -160,8 +158,6 @@ dependencies = [
 [[package]]
 name = "sanakirja-core"
 version = "1.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "121358f6d530a940ba2656c46d4045e5bdbc6090bb82a4b2ecb9fd93e47bf6ee"
 
 [[package]]
 name = "scopeguard"
