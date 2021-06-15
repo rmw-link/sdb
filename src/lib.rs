@@ -169,10 +169,29 @@ impl<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, T: 'a + Siz
 }
 
 // write tx TxDb
-impl<'a, K: Storable + PartialEq, V: PartialEq + Storable, T: Sized + AllocPage> TxDb<K, V, T> {
-  pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, <T as LoadPage>::Error> {
+impl<
+    'a,
+    K: 'a + Storable + PartialEq,
+    V: 'a + PartialEq + Storable,
+    T: Sized + AllocPage + core::fmt::Debug,
+  > TxDb<K, V, T>
+{
+  pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
+    &mut self,
+    k: IntoK,
+    v: IntoV,
+  ) -> std::result::Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &mut *self.tx };
-    btree::put(tx, &mut self.db, k, v)
+    btree::put(tx, &mut self.db, k.into(), v.into())
+  }
+
+  pub fn del<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
+    &mut self,
+    k: IntoK,
+    v: IntoV,
+  ) -> Result<bool, <T as LoadPage>::Error> {
+    let tx = unsafe { &mut *self.tx };
+    btree::del(tx, &mut self.db, k.into(), v.into())
   }
 }
 

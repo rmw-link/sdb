@@ -23,7 +23,13 @@ fn main() -> Result<()> {
 
     //write tx will auto commit when drop
   }
-
+  /*
+  {
+    let tx = TX.w()?;
+    let mut db0 = tx.db(&DB0);
+    db0.del(&1, &5)?;
+  }
+  */
   {
     println!("# read transaction");
 
