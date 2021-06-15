@@ -1,6 +1,6 @@
 use anyhow::Result;
 pub use sanakirja::btree::page::Page;
-use sanakirja::btree::{BTreeMutPage, BTreePage, Db_, Iter, RevIter};
+use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
 pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
 use sanakirja::{AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 use std::convert::Into;
@@ -17,11 +17,14 @@ pub struct Tx {
   pub(crate) env: Env,
 }
 
-pub struct Db<'a, K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>> {
+pub struct Db_<'a, K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>> {
   tx: &'a Tx,
   pub id: usize,
   _kvp: PhantomData<(K, V, P)>,
 }
+
+pub type Db<'a, K, V> = Db_<'a, K, V, Page<K, V>>;
+pub type DbU<'a, K, V> = Db_<'a, K, V, btree::page_unsized::Page<K, V>>;
 
 pub struct TxDb<
   K: Storable + PartialEq,
@@ -29,7 +32,7 @@ pub struct TxDb<
   T: Sized + LoadPage,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
 > {
-  db: Db_<K, V, P>,
+  db: btree::Db_<K, V, P>,
   tx: *mut T,
 }
 
@@ -45,7 +48,7 @@ macro_rules! tx {
         P: BTreeMutPage<K, V> + BTreePage<K, V>,
       >(
         &self,
-        db: &Db<K, V, P>,
+        db: &Db_<K, V, P>,
       ) -> TxDb<K, V, $tx<'a>, P> {
         TxDb {
           db: self.btree(db.id),
@@ -234,8 +237,8 @@ impl Tx {
   pub fn db<K: Storable, V: Storable, P: BTreeMutPage<K, V> + BTreePage<K, V>>(
     &self,
     id: usize,
-  ) -> Db<K, V, P> {
-    Db {
+  ) -> Db_<K, V, P> {
+    Db_ {
       tx: &self,
       id: id,
       _kvp: PhantomData,
