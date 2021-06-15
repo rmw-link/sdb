@@ -1,27 +1,37 @@
 mod db;
 use anyhow::Result;
-use db::TX;
-//use db::{DB0, TX};
+use db::{DB0, TX};
 use sdb::Db;
 
 #[test]
 fn main() -> Result<()> {
-  let DB0: Db<u64, u64> = TX.db(0);
-  let tx = TX.w()?;
-  let mut t1 = tx.db(&DB0);
+  {
+    let tx = TX.w()?; //create a write transaction
+    let mut db0 = tx.db(&DB0);
 
-  t1.put(&1, &1)?;
-  t1.put(&1, &3)?;
-  t1.put(&1, &5)?;
+    db0.put(&1, &1)?;
+    db0.put(&1, &3)?;
+    db0.put(&1, &5)?;
+    db0.put(&2, &1)?;
+    db0.put(&2, &3)?;
 
-  println!("# print all key");
-  for entry in t1.iter(None, None)? {
-    let (k, v) = entry?;
-    println!("> {:?} {:?}", k, v)
+    println!("# w : print all key");
+    for entry in db0.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+    //write tx will auto commit when drop
   }
 
-  //tx.commit()?;
-
+  {
+    let tx = TX.r()?; //create a read transaction
+    let db0 = tx.db(&DB0);
+    println!("# r : print all key");
+    for entry in db0.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+  }
   //let t2 = tx.db(&*T2)?;
   /*
   let test = tx.db(&*db::TEST);

@@ -34,17 +34,37 @@ pub struct ReadTx<'a>(TxnEnv<'a>);
 macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {
-      pub fn db<'b, K: 'b + Storable, V: 'b + Storable>(
-        &self,
-        db: &Db<'b, K, V>,
-      ) -> TxDb<K, V, $tx<'a>> {
+      pub fn db<K: Storable, V: Storable>(&self, db: &Db<K, V>) -> TxDb<K, V, $tx<'a>> {
         TxDb {
           db: self.btree(db.id),
-          tx: self.ptr() as *mut $tx<'a>,
+          tx: self.ptr() as *mut $tx,
         }
       }
     }
-  };
+  }; /*
+     fn get<
+       'a,
+       K: 'a + PartialEq + Storable,
+       V: Storable,
+       P: 'a + BTreePage<K, V>,
+       DB: Into<&'a Db_<K, V, P>>,
+     >(
+       &'a self,
+       db: DB,
+       k: &K,
+     ) -> Result<Option<&V>, <Self as LoadPage>::Error> {
+       match btree::get(self, db.into(), k, None)? {
+         None => Ok(None),
+         Some((key, v)) => {
+           if key == k {
+             Ok(Some(v))
+           } else {
+             Ok(None)
+           }
+         }
+       }
+     }
+     */
 }
 
 tx!(WriteTx, MutTxnEnv);

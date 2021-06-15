@@ -31,5 +31,8 @@ pub static TX: Tx = {
   )
 };
 
-//#[dynamic]
-//pub static DB0: Db<'static, u64, u64> = TX.db(0);
+#[dynamic]
+pub static DB0: Db<'static, u64, u64> = TX.db(0);
+
+#[dynamic]
+pub static DB1: Db<'static, u64, u64> = TX.db(1);
