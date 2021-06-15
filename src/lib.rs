@@ -209,7 +209,6 @@ impl<
   ) -> std::result::Result<bool, <T as LoadPage>::Error> {
     let mut tx = unsafe { &mut *self.tx };
     let r = btree::put(tx, &mut self.db, k.into(), v.into());
-    println!("self id {} -> {:?}", self.id, self.db.db);
     tx.set_root(self.id, self.db.db);
     r
   }
@@ -220,7 +219,9 @@ impl<
     v: IntoV,
   ) -> Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &mut *self.tx };
-    btree::del(tx, &mut self.db, k.into(), v.into())
+    let r = btree::del(tx, &mut self.db, k.into(), v.into());
+    tx.set_root(self.id, self.db.db);
+    r
   }
 }
 
