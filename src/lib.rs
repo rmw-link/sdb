@@ -176,7 +176,7 @@ impl<
     }
   }
 
-  pub fn get<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
+  pub fn one<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
     let k = k.into();
     match btree::get(tx, &self.db, k, None)? {
