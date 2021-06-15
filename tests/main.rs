@@ -27,6 +27,7 @@ fn main() -> Result<()> {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }
+
     //write tx will auto commit when drop
   }
 

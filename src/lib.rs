@@ -94,6 +94,7 @@ impl<'a> Drop for WriteTx<'a> {
     let tx = mem::MaybeUninit::<MutTxnEnv>::uninit();
     let tx = mem::replace(&mut *self.0, unsafe { tx.assume_init() });
     tx.commit().unwrap();
+    println!("auto commited");
   }
 }
 
