@@ -127,19 +127,15 @@ impl<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, T: 'a + Siz
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
 
-  /*
-  pub fn exist<
-    'a,
-    K: 'a + PartialEq + Storable,
-    V: 'a + PartialEq + Storable,
-    P: BTreePage<K, V>,
-  >(
+  pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
     &self,
-    db: &Db_<K, V, P>,
-    k: &K,
-    v: &V,
-  ) -> Result<bool, <Self as LoadPage>::Error> {
-    match btree::get(self, db, k, v.into())? {
+    k: IntoK,
+    v: IntoV,
+  ) -> Result<bool, <T as LoadPage>::Error> {
+    let tx = unsafe { &*self.tx };
+    let k = k.into();
+    let v = v.into();
+    match btree::get(tx, &self.db, k, Some(v))? {
       None => Ok(false),
       Some((key, val)) => {
         if key == k {
@@ -153,9 +149,9 @@ impl<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, T: 'a + Siz
         }
       }
     }
-  }*/
+  }
 
-  pub fn get<IntoK: Into<&'a K>>(self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
+  pub fn get<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
     let k = k.into();
     match btree::get(tx, &self.db, k, None)? {
@@ -227,89 +223,3 @@ impl Tx {
     }
   }
 }
-
-/*
-use sanakirja::btree::{BTreePage, Db_, Iter, RevIter};
-use sanakirja::{btree, AllocPage, Env, LoadPage, WriteTxn, RootDb, ReadTxn};
-pub use sanakirja::{direct_repr, Commit, Storable, UnsizedStorable};
-
-//use static_init::lazy::LesserLazy;
-
-
-
-
-
-/*
-impl<K: 'static + Storable, V: 'static + Storable> From<LesserLazy<Db<'static, K, V>>>
-  for Db<'static, K, V>
-{
-  fn move from(w: LesserLazy<Db<'static, K, V>>) -> Db<'static, K, V> {
-    *w
-  }
-}
-*/
-
-
-pub struct ReadTxDb<'a, K: Storable, V: Storable, TX: R> {
-  tx: &'a TX,
-  pub db: btree::Db<K, V>,
-}
-
-impl<'a, K: Storable, V: Storable, TX: R> From<&'a ReadTxDb<'a, K, V, TX>> for &'a btree::Db<K, V> {
-  fn from(w: &'a ReadTxDb<K, V, TX>) -> &'a btree::Db<K, V> {
-    &w.db
-  }
-}
-
-impl<'a, K: Storable + PartialEq, V: Storable, TX: R> ReadTxDb<'a, K, V, TX> {
-  pub fn get(&self, k: &K) -> Result<Option<&V>, <TX as LoadPage>::Error> {
-    self.tx.get(&self.db, k)
-  }
-
-  pub fn put<T: AllocPage + Sized + Commit>(
-    &mut self,
-    tx: &mut T,
-    k: &K,
-    v: &V,
-  ) -> std::result::Result<bool, <T as LoadPage>::Error> {
-    btree::put(tx, &mut self.db, k, v)
-  }
-}
-
-pub trait R: Sized + LoadPage + RootDb {
-  iter!(iter, iter, Iter);
-  iter!(riter, rev_iter, RevIter);
-
-  fn db<'a, K: Storable, V: Storable>(&'a self, db: &'a Db<K, V>) -> ReadTxDb<'a, K, V, Self> {
-    let tx = self;
-    let db = tx.root_db(db.id).unwrap();
-    ReadTxDb { db, tx }
-  }
-
-
-  fn get<
-    'a,
-    K: 'a + PartialEq + Storable,
-    V: Storable,
-    P: 'a + BTreePage<K, V>,
-    DB: Into<&'a Db_<K, V, P>>,
-  >(
-    &'a self,
-    db: DB,
-    k: &K,
-  ) -> Result<Option<&V>, <Self as LoadPage>::Error> {
-    match btree::get(self, db.into(), k, None)? {
-      None => Ok(None),
-      Some((key, v)) => {
-        if key == k {
-          Ok(Some(v))
-        } else {
-          Ok(None)
-        }
-      }
-    }
-  }
-}
-
-
-*/

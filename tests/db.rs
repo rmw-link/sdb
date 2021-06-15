@@ -1,4 +1,4 @@
-use sdb::{Db, Tx};
+use sdb::{direct_repr, Db, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -34,5 +34,10 @@ pub static TX: Tx = {
 #[dynamic]
 pub static DB0: Db<'static, u64, u64> = TX.db(0);
 
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+pub struct Hash([u8; 32]);
+
+direct_repr!(Hash);
+
 #[dynamic]
-pub static DB1: Db<'static, u64, u64> = TX.db(1);
+pub static DB1: Db<'static, u64, Hash> = TX.db(1);
