@@ -77,14 +77,7 @@ fn main() -> Result<()> {
     db0.put(&1, &3)?;
 
     db0.put(&2, &2)?;
-    db0.put(&2, &3)?;
-    db0.put(&2, &1)?;
-
-    /*
-    db0.put(&2, &5)?;
-    db0.put(&3, &5)?;
-    db0.put(&3, &5)?;
-    */
+    //db0.put(&2, &1)?;
 
     println!("## print all key");
     for entry in db0.iter(None, None)? {
@@ -101,7 +94,7 @@ fn main() -> Result<()> {
     let tx = TX.r()?; //
     let db0 = tx.db(&DB0);
 
-    println!("# exist key 2 value 3 > {:?}", db0.exist(&2, &1)?);
+    println!("# exist key 2 value 1 > {:?}", db0.exist(&2, &1)?);
     println!("# get key 1 > {:?}", db0.get(&1)?);
     println!("# get key 2 > {:?}", db0.get(&2)?);
     println!("# get key 3 > {:?}", db0.get(&3)?);
