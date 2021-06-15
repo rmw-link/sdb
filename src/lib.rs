@@ -23,7 +23,7 @@ pub struct Db<'a, K: Storable, V: Storable> {
   _kv: PhantomData<(K, V)>,
 }
 
-pub struct TxDb<K: Storable, V: Storable, T: Sized + LoadPage> {
+pub struct TxDb<K: Storable + PartialEq, V: PartialEq + Storable, T: Sized + LoadPage> {
   db: btree::Db<K, V>,
   tx: *mut T,
 }
@@ -34,37 +34,17 @@ pub struct ReadTx<'a>(TxnEnv<'a>);
 macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {
-      pub fn db<K: Storable, V: Storable>(&self, db: &Db<K, V>) -> TxDb<K, V, $tx<'a>> {
+      pub fn db<K: Storable + PartialEq, V: Storable + PartialEq>(
+        &self,
+        db: &Db<K, V>,
+      ) -> TxDb<K, V, $tx<'a>> {
         TxDb {
           db: self.btree(db.id),
           tx: self.ptr() as *mut $tx,
         }
       }
     }
-  }; /*
-     fn get<
-       'a,
-       K: 'a + PartialEq + Storable,
-       V: Storable,
-       P: 'a + BTreePage<K, V>,
-       DB: Into<&'a Db_<K, V, P>>,
-     >(
-       &'a self,
-       db: DB,
-       k: &K,
-     ) -> Result<Option<&V>, <Self as LoadPage>::Error> {
-       match btree::get(self, db.into(), k, None)? {
-         None => Ok(None),
-         Some((key, v)) => {
-           if key == k {
-             Ok(Some(v))
-           } else {
-             Ok(None)
-           }
-         }
-       }
-     }
-     */
+  };
 }
 
 tx!(WriteTx, MutTxnEnv);
@@ -141,13 +121,58 @@ macro_rules! iter {
 }
 
 // all TxDb
-impl<'a, K: 'a + Storable, V: 'a + Storable, T: Sized + LoadPage> TxDb<K, V, T> {
+impl<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, T: 'a + Sized + LoadPage>
+  TxDb<K, V, T>
+{
   iter!(iter, iter, Iter);
   iter!(riter, rev_iter, RevIter);
+
+  /*
+  pub fn exist<
+    'a,
+    K: 'a + PartialEq + Storable,
+    V: 'a + PartialEq + Storable,
+    P: BTreePage<K, V>,
+  >(
+    &self,
+    db: &Db_<K, V, P>,
+    k: &K,
+    v: &V,
+  ) -> Result<bool, <Self as LoadPage>::Error> {
+    match btree::get(self, db, k, v.into())? {
+      None => Ok(false),
+      Some((key, val)) => {
+        if key == k {
+          if val == v {
+            Ok(true)
+          } else {
+            Ok(false)
+          }
+        } else {
+          Ok(false)
+        }
+      }
+    }
+  }*/
+
+  pub fn get<IntoK: Into<&'a K>>(self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
+    let tx = unsafe { &*self.tx };
+    let k = k.into();
+    match btree::get(tx, &self.db, k, None)? {
+      None => Ok(None),
+      Some((key, v)) => {
+        if key == k {
+          Ok(Some(v))
+        } else {
+          Ok(None)
+        }
+      }
+    }
+  }
 }
 
 // write tx TxDb
-impl<'a, K: Storable, V: Storable, T: Sized + AllocPage> TxDb<K, V, T> {
+impl<'a, K: Storable + PartialEq, V: PartialEq + Storable, T: Sized + AllocPage> TxDb<K, V, T> {
   pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &mut *self.tx };
     btree::put(tx, &mut self.db, k, v)
@@ -261,27 +286,6 @@ pub trait R: Sized + LoadPage + RootDb {
     ReadTxDb { db, tx }
   }
 
-  fn exist<'a, K: 'a + PartialEq + Storable, V: 'a + PartialEq + Storable, P: BTreePage<K, V>>(
-    &self,
-    db: &Db_<K, V, P>,
-    k: &K,
-    v: &V,
-  ) -> Result<bool, <Self as LoadPage>::Error> {
-    match btree::get(self, db, k, v.into())? {
-      None => Ok(false),
-      Some((key, val)) => {
-        if key == k {
-          if val == v {
-            Ok(true)
-          } else {
-            Ok(false)
-          }
-        } else {
-          Ok(false)
-        }
-      }
-    }
-  }
 
   fn get<
     'a,

@@ -1,7 +1,6 @@
 mod db;
 use anyhow::Result;
 use db::{DB0, TX};
-use sdb::Db;
 
 #[test]
 fn main() -> Result<()> {
@@ -14,6 +13,9 @@ fn main() -> Result<()> {
     db0.put(&1, &5)?;
     db0.put(&2, &1)?;
     db0.put(&2, &3)?;
+    db0.put(&2, &5)?;
+    db0.put(&3, &5)?;
+    db0.put(&3, &5)?;
 
     println!("# w : print all key");
     for entry in db0.iter(None, None)? {
@@ -31,6 +33,7 @@ fn main() -> Result<()> {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }
+    println!("# get key 1 > {:?}", db0.get(&3)?);
   }
   //let t2 = tx.db(&*T2)?;
   /*
