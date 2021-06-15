@@ -1,7 +1,7 @@
 use anyhow::Result;
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
-pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
+pub use sanakirja::{btree, direct_repr, Commit, Error, SetRoot, Storable, UnsizedStorable};
 use sanakirja::{AllocPage, Env, LoadPage, MutTxn, RootDb, Txn};
 use std::convert::Into;
 use std::fs::create_dir_all;
@@ -33,6 +33,7 @@ pub struct TxDb<
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
 > {
   db: btree::Db_<K, V, P>,
+  id: usize,
   tx: *mut T,
 }
 
@@ -51,6 +52,7 @@ macro_rules! tx {
         db: &Db_<K, V, P>,
       ) -> TxDb<K, V, $tx<'a>, P> {
         TxDb {
+          id: db.id,
           db: self.btree(db.id),
           tx: self.ptr() as *mut $tx,
         }
@@ -196,7 +198,7 @@ impl<
     'a,
     K: 'a + Storable + PartialEq,
     V: 'a + PartialEq + Storable,
-    T: Sized + AllocPage + core::fmt::Debug,
+    T: Sized + AllocPage + core::fmt::Debug + SetRoot,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > TxDb<K, V, T, P>
 {
@@ -205,8 +207,11 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> std::result::Result<bool, <T as LoadPage>::Error> {
-    let tx = unsafe { &mut *self.tx };
-    btree::put(tx, &mut self.db, k.into(), v.into())
+    let mut tx = unsafe { &mut *self.tx };
+    let r = btree::put(tx, &mut self.db, k.into(), v.into());
+    println!("self id {} -> {:?}", self.id, self.db.db);
+    tx.set_root(self.id, self.db.db);
+    r
   }
 
   pub fn del<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(

@@ -10,7 +10,8 @@ description="a user-friendly wrapper for sanakirja database"
 
 [dependencies]
 anyhow = "1.0.40"
-sanakirja = {git="https://github.com/gcxfd/sanakirja.git"}
+#sanakirja = {git="https://github.com/gcxfd/sanakirja.git"}
+sanakirja = {path="sanakirja/sanakirja"}
 
 [dev-dependencies]
 static_init= {git="https://gitlab.com/vkahl/static_init.git"}

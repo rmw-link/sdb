@@ -145,8 +145,7 @@ dependencies = [
 
 [[package]]
 name = "sanakirja"
-version = "1.2.1"
-source = "git+https://github.com/gcxfd/sanakirja.git#d2307715202aab86dcefd601414ea6928264e7b5"
+version = "1.2.5"
 dependencies = [
  "fs2",
  "log",
@@ -159,7 +158,6 @@ dependencies = [
 [[package]]
 name = "sanakirja-core"
 version = "1.2.8"
-source = "git+https://github.com/gcxfd/sanakirja.git#d2307715202aab86dcefd601414ea6928264e7b5"
 
 [[package]]
 name = "scopeguard"
