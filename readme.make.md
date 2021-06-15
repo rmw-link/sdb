@@ -8,6 +8,17 @@ sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
 
 I wrapper it for easy use .
 
+First global define db , see [tests/db.rs](./tests/db.rs)
+
+```rust
+#include ./tests/db.rs
+```
+
+Second use it , see [tests/main.rs](./tests/main.rs)
+
+```rust
+#include ./tests/main.rs
+```
 
 ## sanakirja
 
