@@ -59,7 +59,7 @@ pub static TX: Tx = {
 pub static DB0: Db<'static, u64, u64> = TX.db(0);
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-pub struct Hash([u8; 32]);
+pub struct Hash(pub [u8; 2]);
 
 direct_repr!(Hash);
 
@@ -69,6 +69,9 @@ pub static DB1: Db<'static, u64, Hash> = TX.db(1);
 #[dynamic]
 pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 
+#[dynamic]
+pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
+
 ```
 
 Second step : use it , see [tests/main.rs](./tests/main.rs)
@@ -76,7 +79,7 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 ```rust
 mod db;
 use anyhow::Result;
-use db::{DB0, DB2, TX};
+use db::{Hash, DB0, DB1, DB2, DB3, TX};
 
 #[test]
 fn main() -> Result<()> {
@@ -87,7 +90,6 @@ fn main() -> Result<()> {
 
     db0.put(&1, &5)?;
     db0.put(&1, &3)?;
-
     db0.put(&2, &2)?;
     db0.put(&2, &1)?;
     db0.put(&3, &9)?;
@@ -108,12 +110,29 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
+    let mut db1 = tx.db(&DB1);
+    db1.put(&1, &Hash([1, 2]))?;
+    println!("- print all key db1");
+    for entry in db1.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
     let mut db2 = tx.db(&DB2);
     db2.put(&1, &[1, 2, 3][..])?;
     db2.put(&2, &[4, 6][..])?;
 
     println!("- print all key db2");
     for entry in db2.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    let mut db3 = tx.db(&DB3);
+    db3.put(&[1, 2][..], &[1, 2, 3][..])?;
+
+    println!("- print all key db3");
+    for entry in db3.iter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }

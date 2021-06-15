@@ -35,7 +35,7 @@ pub static TX: Tx = {
 pub static DB0: Db<'static, u64, u64> = TX.db(0);
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-pub struct Hash([u8; 32]);
+pub struct Hash(pub [u8; 2]);
 
 direct_repr!(Hash);
 
@@ -44,3 +44,6 @@ pub static DB1: Db<'static, u64, Hash> = TX.db(1);
 
 #[dynamic]
 pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
+
+#[dynamic]
+pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
