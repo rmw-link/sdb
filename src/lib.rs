@@ -30,6 +30,14 @@ pub struct DbPage<
   _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
 }
 
+macro_rules! db_page_w {
+  ($self:ident, $db:ident, $fn:expr) => {{
+    let tx = $self.tx.w()?;
+    let mut $db = tx.db($self);
+    $fn
+  }};
+}
+
 impl<
     'a,
     K: ?Sized + Storable + PartialEq,
@@ -42,9 +50,7 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> Result<bool, Error> {
-    let tx = self.tx.w()?;
-    let mut db = tx.db(self);
-    db.put(k.into(), v.into())
+    db_page_w!(self, db, db.put(k.into(), v.into()))
   }
 }
 
