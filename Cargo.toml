@@ -7,6 +7,9 @@ edition = "2021"
 version = "0.0.1"
 license = "AGPL-3.0-or-later"
 description="a user-friendly wrapper for sanakirja database"
+homepage = "https://github.com/rmw-link/sdb"
+repository = "https://github.com/rmw-link/sdb"
+readme = "README.md"
 
 [dependencies]
 sanakirja = "1.2.4"
