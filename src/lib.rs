@@ -19,6 +19,17 @@ pub struct Tx {
   pub(crate) env: Env,
 }
 
+pub struct TxDb<
+  K: Storable + PartialEq + ?Sized,
+  V: Storable + PartialEq + ?Sized,
+  T: LoadPage,
+  P: BTreeMutPage<K, V> + BTreePage<K, V>,
+> {
+  db: Db_<K, V, P>,
+  id: usize,
+  tx: *mut T,
+}
+
 pub struct DbPage<
   'a,
   K: ?Sized + Storable + PartialEq,
@@ -28,6 +39,19 @@ pub struct DbPage<
   tx: &'a Tx,
   pub id: usize,
   _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
+}
+
+type UP<K, V> = btree::page_unsized::Page<K, V>;
+
+pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>>;
+pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>>;
+
+macro_rules! db_page_r {
+  ($self:ident, $db:ident, $fn:expr) => {{
+    let tx = $self.tx.r()?;
+    let $db = tx.db($self);
+    $fn
+  }};
 }
 
 macro_rules! db_page_w {
@@ -63,22 +87,13 @@ impl<
   pub fn rm<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<usize, Error> {
     db_page_w!(self, db, db.rm(k.into()))
   }
-}
 
-type UP<K, V> = btree::page_unsized::Page<K, V>;
-
-pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>>;
-pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>>;
-
-pub struct TxDb<
-  K: Storable + PartialEq + ?Sized,
-  V: Storable + PartialEq + ?Sized,
-  T: LoadPage,
-  P: BTreeMutPage<K, V> + BTreePage<K, V>,
-> {
-  db: Db_<K, V, P>,
-  id: usize,
-  tx: *mut T,
+  pub fn key_iter<IntoK: Into<&'a K>>(
+    &self,
+    k: IntoK,
+  ) -> Result<KeyIter<'a, TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.key_iter(k.into()))
+  }
 }
 
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);

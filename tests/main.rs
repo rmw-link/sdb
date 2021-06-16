@@ -10,6 +10,11 @@ fn main() -> Result<()> {
   DB0.put(&6, &1)?;
   DB0.put(&6, &2)?;
   DB0.put(&6, &3)?;
+  println!("- print val where key = 6");
+  for entry in DB0.key_iter(&6)? {
+    let (k, v) = entry?;
+    println!("> {:?} {:?}", k, v)
+  }
   DB0.rm1(&6, None)?;
 
   {
