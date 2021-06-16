@@ -85,6 +85,11 @@ use db::{Hash, DB0, DB1, DB2, DB3, TX};
 fn main() -> Result<()> {
   println!("direct put");
   DB0.put(&0, &0)?;
+  DB0.put(&0, &1)?;
+  DB0.put(&6, &1)?;
+  DB0.put(&6, &2)?;
+  DB0.put(&6, &3)?;
+  DB0.rm1(&6, None)?;
 
   {
     println!("# write transaction");

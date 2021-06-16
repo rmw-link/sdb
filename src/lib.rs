@@ -52,6 +52,17 @@ impl<
   ) -> Result<bool, Error> {
     db_page_w!(self, db, db.put(k.into(), v.into()))
   }
+  pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
+    &self,
+    k: IntoK,
+    v: IntoV,
+  ) -> Result<bool, Error> {
+    db_page_w!(self, db, db.rm1(k.into(), v.into()))
+  }
+
+  pub fn rm<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<usize, Error> {
+    db_page_w!(self, db, db.rm(k.into()))
+  }
 }
 
 type UP<K, V> = btree::page_unsized::Page<K, V>;
@@ -277,6 +288,7 @@ impl<
   ) -> Result<bool, Error> {
     set_root!(btree::del(tx, &mut self.db, k.into(), v.into()), self, tx)
   }
+
   pub fn rm<IntoK: Into<&'a K>>(&mut self, k: IntoK) -> Result<usize, Error> {
     set_root!(
       {
