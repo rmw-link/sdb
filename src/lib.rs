@@ -91,8 +91,39 @@ impl<
   pub fn key_iter<IntoK: Into<&'a K>>(
     &self,
     k: IntoK,
-  ) -> Result<KeyIter<'a, TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+  ) -> Result<KeyIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
     db_page_r!(self, db, db.key_iter(k.into()))
+  }
+
+  pub fn iter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
+    &self,
+    k: OptionK,
+    v: OptionV,
+  ) -> Result<Iter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.iter(k.into(), v.into()))
+  }
+
+  pub fn riter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
+    &self,
+    k: OptionK,
+    v: OptionV,
+  ) -> Result<RevIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.riter(k.into(), v.into()))
+  }
+
+  pub fn one<IntoK: Into<&'a K>>(
+    &self,
+    k: IntoK,
+  ) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.one(k.into()))
+  }
+
+  pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
+    &self,
+    k: IntoK,
+    v: IntoV,
+  ) -> Result<bool, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.exist(k.into(), v.into()))
   }
 }
 
@@ -190,7 +221,7 @@ macro_rules! iter {
       &self,
       key: OptionK,
       value: OptionV,
-    ) -> Result<$cls<T, K, V, P>, <T as LoadPage>::Error> {
+    ) -> Result<$cls<'a, T, K, V, P>, <T as LoadPage>::Error> {
       let tx = unsafe { &*self.tx };
       $real(
         tx,
