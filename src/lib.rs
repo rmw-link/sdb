@@ -236,13 +236,13 @@ impl<
 }
 
 macro_rules! set_root {
-  ($self:ident, $fn: expr, $k:ident, $v:ident) => {{
-    let tx = unsafe { &mut *$self.tx };
+  ($fn: expr, $self:ident, $tx:ident ) => {{
+    let $tx = unsafe { &mut *$self.tx };
     let db = $self.db.db;
-    let r = $fn(tx, &mut $self.db, $k.into(), $v.into());
+    let r = $fn;
     let db_now = $self.db.db;
     if db_now != db {
-      tx.set_root($self.id, db_now);
+      $tx.set_root($self.id, db_now);
     }
     r
   }};
@@ -261,7 +261,7 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> std::result::Result<bool, Error> {
-    set_root!(self, btree::put, k, v)
+    set_root!(btree::put(tx, &mut self.db, k.into(), v.into()), self, tx)
   }
 
   pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
@@ -269,7 +269,22 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> Result<bool, Error> {
-    set_root!(self, btree::del, k, v)
+    set_root!(btree::del(tx, &mut self.db, k.into(), v.into()), self, tx)
+  }
+  pub fn rm<IntoK: Into<&'a K>>(&mut self, k: IntoK) -> Result<usize, Error> {
+    set_root!(
+      {
+        let k = k.into();
+        let db = &mut self.db;
+        let mut n = 0usize;
+        while btree::del(tx, db, k, None)? {
+          n += 1
+        }
+        Ok(n)
+      },
+      self,
+      tx
+    )
   }
 }
 
