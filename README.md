@@ -12,10 +12,6 @@ sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
 see [Sanakirja 1.0 (pure Rust transactional on-disk key-value store) released!](https://www.reddit.com/r/rust/comments/lp5jez/sanakirja_10_pure_rust_transactional_ondisk/)
 
 > Sanakirja is at least 10 times faster than Sled in my (sequential) benchmarks, and even 20%-50% faster than LMDB (the fastest C equivalent) in the same benchmarks. Also, I started it when there was no real alternative (Sled didn't exist at the time).
->
-> I wrote about the cool features of Sled in another comment in this thread. Features unique to Sanakirja are fast zero-copy clone of tables, arbitrary nesting of datastructures (my main use cases uses tables of tuples of tables of statically-typed values, something like Db<String, (Db<A, B>, Db<C, D>, u64>)> in Rust terms). In addition to that, like LMDB (but unlike Sled), Sanakirja is robust to inter-process concurrency (multiple process reading and writing concurrently).
-
-
 
 [I](https://github.com/rmw-link/sdb) wrapper it for easy use .
 
