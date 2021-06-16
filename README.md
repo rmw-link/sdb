@@ -184,11 +184,10 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
-    println!("- print greatest key");
+    println!("- print key in revese order");
     for entry in db0.riter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v);
-      break;
     }
   }
 
