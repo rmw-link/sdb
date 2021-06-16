@@ -10,7 +10,6 @@ sanakirja a key can have multiple values , this is different from the other k-v 
 
 sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
 
-
 see [Sanakirja 1.0 (pure Rust transactional on-disk key-value store) released!](https://www.reddit.com/r/rust/comments/lp5jez/sanakirja_10_pure_rust_transactional_ondisk/)
 
 > Sanakirja is at least 10 times faster than Sled in my (sequential) benchmarks, and even 20%-50% faster than LMDB (the fastest C equivalent) in the same benchmarks. Also, I started it when there was no real alternative (Sled didn't exist at the time).
@@ -18,6 +17,8 @@ see [Sanakirja 1.0 (pure Rust transactional on-disk key-value store) released!](
 [I](https://github.com/rmw-link/sdb) wrapper it for easy use .
 
 First step : static define db , see [tests/db.rs](./tests/db.rs)
+
+I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for static init ( use git version because of [bug](https://gitlab.com/okannen/static_init/-/issues/7) ) .  You can use [lazy_static](https://docs.rs/crate/lazy_static) instead .
 
 ```rust
 use sdb::{direct_repr, Db, DbU, Storable, Tx, UnsizedStorable};
