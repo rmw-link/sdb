@@ -1,3 +1,5 @@
+mod iter;
+use iter::{key_iter, KeyIter};
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
 pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
@@ -151,14 +153,14 @@ impl<'a> Drop for WriteTx<'a> {
 }
 
 macro_rules! iter {
-  ($fn:ident, $real:ident, $cls:ident) => {
+  ($cls:ident, $fn:ident, $real:expr) => {
     pub fn $fn<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
       &self,
       key: OptionK,
       value: OptionV,
     ) -> Result<$cls<T, K, V, P>, <T as LoadPage>::Error> {
       let tx = unsafe { &*self.tx };
-      btree::$real(
+      $real(
         tx,
         &self.db,
         match key.into() {
@@ -182,8 +184,16 @@ impl<
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > TxDb<K, V, T, P>
 {
-  iter!(iter, iter, Iter);
-  iter!(riter, rev_iter, RevIter);
+  iter!(Iter, iter, btree::iter);
+  iter!(RevIter, riter, btree::rev_iter);
+
+  pub fn key_iter<IntoK: Into<&'a K>>(
+    &self,
+    key: IntoK,
+  ) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
+    let tx = unsafe { &*self.tx };
+    key_iter(tx, &self.db, key.into())
+  }
 
   pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
     &self,
@@ -226,10 +236,10 @@ impl<
 }
 
 macro_rules! set_root {
-  ($self:ident, $fn: ident, $k:ident, $v:ident) => {{
+  ($self:ident, $fn: expr, $k:ident, $v:ident) => {{
     let tx = unsafe { &mut *$self.tx };
     let db = $self.db.db;
-    let r = btree::$fn(tx, &mut $self.db, $k.into(), $v.into());
+    let r = $fn(tx, &mut $self.db, $k.into(), $v.into());
     let db_now = $self.db.db;
     if db_now != db {
       tx.set_root($self.id, db_now);
@@ -251,7 +261,7 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> std::result::Result<bool, Error> {
-    set_root!(self, put, k, v)
+    set_root!(self, btree::put, k, v)
   }
 
   pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
@@ -259,7 +269,7 @@ impl<
     k: IntoK,
     v: IntoV,
   ) -> Result<bool, Error> {
-    set_root!(self, del, k, v)
+    set_root!(self, btree::del, k, v)
   }
 }
 

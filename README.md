@@ -66,7 +66,7 @@ direct_repr!(Hash);
 #[dynamic]
 pub static DB1: Db<'static, u64, Hash> = TX.db(1);
 
-#[dynamic]
+#[dynamic] // DbU = Db & btree::page_unsized::Page
 pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 
 #[dynamic]
@@ -103,9 +103,15 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
-    println!("- delete key 2 the first : {}", db0.rm1(&2, None)?);
+    println!("- print db1 where key is 2");
+    for entry in db0.key_iter(&2)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    println!("- delete key 2 the first value : {}", db0.rm1(&2, None)?);
     println!("- delete 2,5 : {}", db0.rm1(&2, &5)?);
-    println!("- delete key 5 the first : {}", db0.rm1(&5, None)?);
+    println!("- delete key 5 the first value : {}", db0.rm1(&5, None)?);
 
     println!("- print all key");
     for entry in db0.iter(None, None)? {
