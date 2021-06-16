@@ -43,7 +43,7 @@ impl<
     v: IntoV,
   ) -> Result<bool, Error> {
     let tx = self.tx.w()?;
-    let mut db = tx.db(&self);
+    let mut db = tx.db(self);
     db.put(k.into(), v.into())
   }
 }
@@ -312,8 +312,8 @@ impl Tx {
     id: usize,
   ) -> DbPage<K, V, P> {
     DbPage {
-      tx: &self,
-      id: id,
+      tx: self,
+      id,
       _kvp: PhantomData,
     }
   }
