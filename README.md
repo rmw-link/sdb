@@ -4,6 +4,8 @@
 
 a user-friendly wrapper for [sanakirja](https://docs.rs/sanakirja/latest/sanakirja/) database
 
+sanakirja a key can have multiple values , this is different from the other k-v databases .
+
 ## about
 
 sanakirja author is [Pierre-Étienne Meunier](https://twitter.com/pijul_org) .
