@@ -1,9 +1,13 @@
+mod dbpage;
+pub use dbpage::Tx;
+use dbpage::{DbPage, MutTxnEnv, TxnEnv};
 mod iter;
 use iter::{key_iter, KeyIter};
+
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
 pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
-use sanakirja::{Env, LoadPage, MutTxn, RootDb, Txn};
+use sanakirja::{Env, LoadPage, RootDb};
 use std::convert::Into;
 use std::fs::create_dir_all;
 use std::marker::PhantomData;
@@ -11,13 +15,6 @@ use std::mem;
 use std::mem::ManuallyDrop;
 use std::path::PathBuf;
 use std::result::Result;
-
-type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
-type TxnEnv<'a> = Txn<&'a Env>;
-
-pub struct Tx {
-  pub(crate) env: Env,
-}
 
 pub struct TxDb<
   K: Storable + PartialEq + ?Sized,
@@ -30,102 +27,10 @@ pub struct TxDb<
   tx: *mut T,
 }
 
-pub struct DbPage<
-  'a,
-  K: ?Sized + Storable + PartialEq,
-  V: ?Sized + Storable + PartialEq,
-  P: BTreeMutPage<K, V> + BTreePage<K, V>,
-> {
-  tx: &'a Tx,
-  pub id: usize,
-  _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
-}
-
 type UP<K, V> = btree::page_unsized::Page<K, V>;
 
 pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>>;
 pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>>;
-
-macro_rules! db_page_r {
-  ($self:ident, $db:ident, $fn:expr) => {{
-    let tx = $self.tx.r()?;
-    let $db = tx.db($self);
-    $fn
-  }};
-}
-
-macro_rules! db_page_w {
-  ($self:ident, $db:ident, $fn:expr) => {{
-    let tx = $self.tx.w()?;
-    let mut $db = tx.db($self);
-    $fn
-  }};
-}
-
-impl<
-    'a,
-    K: ?Sized + Storable + PartialEq,
-    V: ?Sized + Storable + PartialEq,
-    P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  > DbPage<'a, K, V, P>
-{
-  pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, Error> {
-    db_page_w!(self, db, db.put(k.into(), v.into()))
-  }
-  pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, Error> {
-    db_page_w!(self, db, db.rm1(k.into(), v.into()))
-  }
-
-  pub fn rm<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<usize, Error> {
-    db_page_w!(self, db, db.rm(k.into()))
-  }
-
-  pub fn key_iter<IntoK: Into<&'a K>>(
-    &self,
-    k: IntoK,
-  ) -> Result<KeyIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.key_iter(k.into()))
-  }
-
-  pub fn iter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
-    &self,
-    k: OptionK,
-    v: OptionV,
-  ) -> Result<Iter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.iter(k.into(), v.into()))
-  }
-
-  pub fn riter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
-    &self,
-    k: OptionK,
-    v: OptionV,
-  ) -> Result<RevIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.riter(k.into(), v.into()))
-  }
-
-  pub fn one<IntoK: Into<&'a K>>(
-    &self,
-    k: IntoK,
-  ) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.one(k.into()))
-  }
-
-  pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.exist(k.into(), v.into()))
-  }
-}
 
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);

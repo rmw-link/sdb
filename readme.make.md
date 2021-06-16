@@ -29,6 +29,13 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 #include ./tests/main.rs
 ```
 
+db method you can see [src/dbpage.rs](./src/dbpage.rs)
+
+```rust
+#include ./src/dbpage.rs
+```
+
+
 ## sanakirja
 
 Copy-on-write datastructures, storable on disk (or elsewhere) with a stable format.
