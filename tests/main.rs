@@ -1,6 +1,7 @@
 mod db;
 use anyhow::Result;
 use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
+use desse::DesseSized;
 use sdb::UnsizedStorable;
 
 #[test]
@@ -142,6 +143,8 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v);
     }
   }
+
+  println!("Data::SIZE {:?}", Data::SIZE);
 
   Ok(())
 }
