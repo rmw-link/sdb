@@ -1,6 +1,7 @@
 mod db;
 use anyhow::Result;
 use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
+use sdb::UnsizedStorable;
 
 #[test]
 fn main() -> Result<()> {
@@ -84,8 +85,7 @@ fn main() -> Result<()> {
       id: 1234,
       hash: [3, 4],
     };
-    //let serialized = data.serialize();
-    //println!("- serialized {:?} len {}", serialized, serialized.len());
+    println!("data size : {}", data.size());
     db4.put(&1, &data)?;
     println!("- print all key db4");
     for entry in db4.iter(None, None)? {
