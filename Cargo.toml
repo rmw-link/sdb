@@ -9,6 +9,8 @@ license = "AGPL-3.0-or-later"
 description="a user-friendly wrapper for sanakirja database"
 homepage = "https://github.com/rmw-link/sdb"
 repository = "https://github.com/rmw-link/sdb"
+documentation = "https://docs.rs/sdb"
+readme = "README.md"
 readme = "README.md"
 
 [dependencies]
