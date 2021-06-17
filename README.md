@@ -73,7 +73,7 @@ pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Data {
-  pub hash: [u8; 2],
+  pub hash: [u8; 3],
   pub id: u64,
 }
 
@@ -172,7 +172,7 @@ fn main() -> Result<()> {
     let mut db4 = tx.db(&DB4);
     let data = Data {
       id: 1234,
-      hash: [3, 4],
+      hash: [3, 2, 1],
     };
     println!("data size : {}", data.size());
     db4.put(&1, &data)?;

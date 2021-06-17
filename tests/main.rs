@@ -83,7 +83,7 @@ fn main() -> Result<()> {
     let mut db4 = tx.db(&DB4);
     let data = Data {
       id: 1234,
-      hash: [3, 4],
+      hash: [3, 2, 1],
     };
     println!("data size : {}", data.size());
     db4.put(&1, &data)?;

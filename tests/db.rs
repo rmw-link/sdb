@@ -50,7 +50,7 @@ pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
 #[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Data {
-  pub hash: [u8; 2],
+  pub hash: [u8; 3],
   pub id: u64,
 }
 
