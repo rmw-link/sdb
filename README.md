@@ -71,6 +71,17 @@ pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 #[dynamic]
 pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+pub struct Data {
+  pub hash: [u8; 2],
+  pub id: u64,
+}
+
+direct_repr!(Data);
+
+#[dynamic]
+pub static DB4: Db<'static, u64, Data> = TX.db(4);
+
 ```
 
 Second step : use it , see [tests/main.rs](./tests/main.rs)
@@ -78,7 +89,7 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 ```rust
 mod db;
 use anyhow::Result;
-use db::{Hash, DB0, DB1, DB2, DB3, TX};
+use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
 
 #[test]
 fn main() -> Result<()> {
@@ -152,6 +163,21 @@ fn main() -> Result<()> {
     db3.put(&[1, 2][..], &[1, 2, 3][..])?;
 
     println!("- print all key db3");
+    for entry in db3.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    let mut db4 = tx.db(&DB4);
+    db3.put(
+      &1,
+      &Data {
+        id: 2,
+        hash: [3, 4],
+      },
+    )?;
+
+    println!("- print all key db4");
     for entry in db3.iter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)

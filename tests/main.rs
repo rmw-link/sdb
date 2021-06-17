@@ -1,6 +1,6 @@
 mod db;
 use anyhow::Result;
-use db::{Hash, DB0, DB1, DB2, DB3, TX};
+use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
 
 #[test]
 fn main() -> Result<()> {
@@ -74,6 +74,21 @@ fn main() -> Result<()> {
     db3.put(&[1, 2][..], &[1, 2, 3][..])?;
 
     println!("- print all key db3");
+    for entry in db3.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
+
+    let mut db4 = tx.db(&DB4);
+    db3.put(
+      &1,
+      &Data {
+        id: 2,
+        hash: [3, 4],
+      },
+    )?;
+
+    println!("- print all key db4");
     for entry in db3.iter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)

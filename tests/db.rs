@@ -47,3 +47,14 @@ pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 
 #[dynamic]
 pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
+
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+pub struct Data {
+  pub hash: [u8; 2],
+  pub id: u64,
+}
+
+direct_repr!(Data);
+
+#[dynamic]
+pub static DB4: Db<'static, u64, Data> = TX.db(4);
