@@ -11,11 +11,9 @@ homepage = "https://github.com/rmw-link/sdb"
 repository = "https://github.com/rmw-link/sdb"
 documentation = "https://docs.rs/sdb"
 readme = "README.md"
-readme = "README.md"
 
 [dependencies]
 sanakirja = "1.2.5"
-#sanakirja = {git="https://github.com/gcxfd/sanakirja.git"}
 
 [dev-dependencies]
 static_init= {git="https://gitlab.com/vkahl/static_init.git"}
