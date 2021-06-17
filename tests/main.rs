@@ -80,16 +80,15 @@ fn main() -> Result<()> {
     }
 
     let mut db4 = tx.db(&DB4);
-    db3.put(
-      &1,
-      &Data {
-        id: 2,
-        hash: [3, 4],
-      },
-    )?;
-
+    let data = Data {
+      id: 1234,
+      hash: [3, 4],
+    };
+    //let serialized = data.serialize();
+    //println!("- serialized {:?} len {}", serialized, serialized.len());
+    db4.put(&1, &data)?;
     println!("- print all key db4");
-    for entry in db3.iter(None, None)? {
+    for entry in db4.iter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }
@@ -132,6 +131,13 @@ fn main() -> Result<()> {
 
     println!("- print key in revese order");
     for entry in db0.riter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v);
+    }
+
+    let db4 = tx.db(&DB4);
+    println!("- db4 : print key in revese order");
+    for entry in db4.riter(None, None)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v);
     }
