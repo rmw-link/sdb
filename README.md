@@ -245,7 +245,7 @@ db method you can see [src/dbpage.rs](./src/dbpage.rs)
 
 ```rust
 use crate::iter::KeyIter;
-use crate::tx::{MutTxnEnv, Tx, TxnEnv};
+use crate::tx::{Tx, TxnEnv};
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
 use sanakirja::{Error, LoadPage, Storable};
