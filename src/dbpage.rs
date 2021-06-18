@@ -28,45 +28,31 @@ impl<
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > DbPage<'a, K, V, P>
 {
-  pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, Error> {
-    db_page_w!(self, db, db.put(k.into(), v.into()))
+  pub fn put(&self, k: &K, v: &V) -> Result<bool, Error> {
+    db_page_w!(self, db, db.put(k, v))
   }
 
-  pub fn rm<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<usize, Error> {
-    db_page_w!(self, db, db.rm(k.into()))
-  }
-  pub fn one<IntoK: Into<&'a K>>(
-    &self,
-    k: IntoK,
-  ) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.one(k.into()))
+  pub fn rm(&self, k: &K) -> Result<usize, Error> {
+    db_page_w!(self, db, db.rm(k))
   }
 
-  pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.exist(k.into(), v.into()))
+  pub fn one(&self, k: &'a K) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.one(k))
   }
 
-  pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, Error> {
-    db_page_w!(self, db, db.rm1(k.into(), v.into()))
+  pub fn exist(&self, k: &K, v: &V) -> Result<bool, <TxnEnv as LoadPage>::Error> {
+    db_page_r!(self, db, db.exist(k, v))
   }
 
-  pub fn key_iter<IntoK: Into<&'a K>>(
+  pub fn rm1<IntoV: Into<Option<&'a V>>>(&self, k: &K, v: IntoV) -> Result<bool, Error> {
+    db_page_w!(self, db, db.rm1(k, v.into()))
+  }
+
+  pub fn key_iter(
     &self,
-    k: IntoK,
+    k: &'a K,
   ) -> Result<KeyIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
-    db_page_r!(self, db, db.key_iter(k.into()))
+    db_page_r!(self, db, db.key_iter(k))
   }
 
   pub fn iter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(

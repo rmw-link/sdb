@@ -156,22 +156,13 @@ impl<
   iter!(Iter, iter, btree::iter);
   iter!(RevIter, riter, btree::rev_iter);
 
-  pub fn key_iter<IntoK: Into<&'a K>>(
-    &self,
-    key: IntoK,
-  ) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
+  pub fn key_iter(&self, key: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
     let tx = unsafe { &*self.tx };
-    key_iter(tx, &self.db, key.into())
+    key_iter(tx, &self.db, key)
   }
 
-  pub fn exist<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, <T as LoadPage>::Error> {
+  pub fn exist(&self, k: &K, v: &V) -> Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
-    let k = k.into();
-    let v = v.into();
     match btree::get(tx, &self.db, k, Some(v))? {
       None => Ok(false),
       Some((key, val)) => {
@@ -188,9 +179,8 @@ impl<
     }
   }
 
-  pub fn one<IntoK: Into<&'a K>>(&self, k: IntoK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
+  pub fn one(&self, k: &K) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
-    let k = k.into();
     match btree::get(tx, &self.db, k, None)? {
       None => Ok(None),
       Some((key, v)) => {
@@ -225,26 +215,17 @@ impl<
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
   > TxDb<K, V, MutTxnEnv<'a>, P>
 {
-  pub fn put<IntoK: Into<&'a K>, IntoV: Into<&'a V>>(
-    &mut self,
-    k: IntoK,
-    v: IntoV,
-  ) -> std::result::Result<bool, Error> {
-    set_root!(btree::put(tx, &mut self.db, k.into(), v.into()), self, tx)
+  pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, Error> {
+    set_root!(btree::put(tx, &mut self.db, k, v), self, tx)
   }
 
-  pub fn rm1<IntoK: Into<&'a K>, IntoV: Into<Option<&'a V>>>(
-    &mut self,
-    k: IntoK,
-    v: IntoV,
-  ) -> Result<bool, Error> {
-    set_root!(btree::del(tx, &mut self.db, k.into(), v.into()), self, tx)
+  pub fn rm1<IntoV: Into<Option<&'a V>>>(&mut self, k: &K, v: IntoV) -> Result<bool, Error> {
+    set_root!(btree::del(tx, &mut self.db, k, v.into()), self, tx)
   }
 
-  pub fn rm<IntoK: Into<&'a K>>(&mut self, k: IntoK) -> Result<usize, Error> {
+  pub fn rm(&mut self, k: &K) -> Result<usize, Error> {
     set_root!(
       {
-        let k = k.into();
         let db = &mut self.db;
         let mut n = 0usize;
         while btree::del(tx, db, k, None)? {
