@@ -1,5 +1,5 @@
 mod dbpage;
-use dbpage::DbPage;
+pub use dbpage::{DbPage, EncodeDecode};
 mod tx;
 pub use tx::{MutTxnEnv, Tx, TxnEnv};
 mod iter;
@@ -7,7 +7,7 @@ use iter::{key_iter, KeyIter};
 
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
-pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
+pub use sanakirja::{btree, Commit, Error, Storable, UnsizedStorable};
 use sanakirja::{Env, LoadPage, RootDb};
 use std::convert::Into;
 use std::fs::create_dir_all;
@@ -16,6 +16,14 @@ use std::mem;
 use std::mem::ManuallyDrop;
 use std::path::PathBuf;
 use std::result::Result;
+
+#[macro_export]
+macro_rules! sdb {
+  ($cls:ident) => {
+    sanakirja::direct_repr!($cls);
+    impl sdb::EncodeDecode<$cls> for $cls {}
+  };
+}
 
 pub struct TxDb<
   K: Storable + PartialEq + ?Sized,
@@ -30,8 +38,8 @@ pub struct TxDb<
 
 type UP<K, V> = btree::page_unsized::Page<K, V>;
 
-pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>>;
-pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>>;
+pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>, K, V>;
+pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>, K, V>;
 
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);
@@ -40,12 +48,14 @@ macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {
       pub fn db<
-        K: Storable + PartialEq + ?Sized,
-        V: Storable + PartialEq + ?Sized,
+        K: ?Sized + Storable + PartialEq,
+        V: ?Sized + Storable + PartialEq,
         P: BTreeMutPage<K, V> + BTreePage<K, V>,
+        RK: ?Sized + EncodeDecode<K>,
+        RV: ?Sized + EncodeDecode<V>,
       >(
         &self,
-        db: &DbPage<K, V, P>,
+        db: &DbPage<K, V, P, RK, RV>,
       ) -> TxDb<K, V, $tx<'a>, P> {
         TxDb {
           id: db.id,
@@ -255,13 +265,15 @@ impl Tx {
   }
 
   pub fn db<
-    K: Storable + PartialEq + ?Sized,
-    V: Storable + PartialEq + ?Sized,
+    K: ?Sized + Storable + PartialEq,
+    V: ?Sized + Storable + PartialEq,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
+    RK: ?Sized + EncodeDecode<K>,
+    RV: ?Sized + EncodeDecode<V>,
   >(
     &self,
     id: usize,
-  ) -> DbPage<K, V, P> {
+  ) -> DbPage<K, V, P, RK, RV> {
     DbPage {
       tx: self,
       id,

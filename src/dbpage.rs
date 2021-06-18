@@ -26,7 +26,9 @@ impl<
     K: ?Sized + Storable + PartialEq,
     V: ?Sized + Storable + PartialEq,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  > DbPage<'a, K, V, P>
+    RK: ?Sized + EncodeDecode<K>,
+    RV: ?Sized + EncodeDecode<V>,
+  > DbPage<'a, K, V, P, RK, RV>
 {
   pub fn put(&self, k: &K, v: &V) -> Result<bool, Error> {
     db_page_w!(self, db, db.put(k, v))
@@ -72,13 +74,31 @@ impl<
   }
 }
 
+pub trait EncodeDecode<T: ?Sized> {
+  /*
+  fn encode(&self) -> &T;
+  fn decode(val: &T) -> Self;
+  */
+}
+
+impl EncodeDecode<u64> for u64 {}
+
+impl EncodeDecode<[u8]> for [u8] {
+  /*
+    fn encode(&self) -> &[u8]{self};
+    fn decode(val: &[u8]) -> [u8]{*val};
+  */
+}
+
 pub struct DbPage<
   'a,
   K: ?Sized + Storable + PartialEq,
   V: ?Sized + Storable + PartialEq,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  RK: ?Sized + EncodeDecode<K>,
+  RV: ?Sized + EncodeDecode<V>,
 > {
   pub(crate) tx: &'a Tx,
   pub id: usize,
-  pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P)>,
+  pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
