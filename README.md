@@ -21,7 +21,6 @@ First step : static define db , see [tests/db.rs](./tests/db.rs)
 I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for static init ( use git version because of [bug](https://gitlab.com/okannen/static_init/-/issues/7) ) .  You can use [lazy_static](https://docs.rs/crate/lazy_static) instead .
 
 ```rust
-use desse::{Desse, DesseSized};
 use sdb::{sdb, Db, DbU, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
@@ -72,7 +71,7 @@ pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 #[dynamic]
 pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse)]
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Data {
   pub hash: [u8; 3],
   pub id: u64,
@@ -91,7 +90,6 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 mod db;
 use anyhow::Result;
 use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
-use desse::DesseSized;
 use sdb::UnsizedStorable;
 
 #[test]
@@ -233,8 +231,6 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v);
     }
   }
-
-  println!("Data::SIZE {:?}", Data::SIZE);
 
   Ok(())
 }

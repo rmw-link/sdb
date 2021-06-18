@@ -1,4 +1,3 @@
-use desse::{Desse, DesseSized};
 use sdb::{sdb, Db, DbU, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
@@ -49,7 +48,7 @@ pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 #[dynamic]
 pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse)]
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Data {
   pub hash: [u8; 3],
   pub id: u64,
