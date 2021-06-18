@@ -1,15 +1,9 @@
 use crate::iter::KeyIter;
+use crate::tx::{MutTxnEnv, Tx, TxnEnv};
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
-use sanakirja::{Env, Error, LoadPage, MutTxn, Storable, Txn};
+use sanakirja::{Error, LoadPage, Storable};
 use std::marker::PhantomData;
-
-pub type MutTxnEnv<'a> = MutTxn<&'a Env, ()>;
-pub type TxnEnv<'a> = Txn<&'a Env>;
-
-pub struct Tx {
-  pub(crate) env: Env,
-}
 
 macro_rules! db_page_r {
   ($self:ident, $db:ident, $fn:expr) => {{

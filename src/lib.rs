@@ -1,6 +1,7 @@
 mod dbpage;
-pub use dbpage::Tx;
-use dbpage::{DbPage, MutTxnEnv, TxnEnv};
+use dbpage::DbPage;
+mod tx;
+pub use tx::{MutTxnEnv, Tx, TxnEnv};
 mod iter;
 use iter::{key_iter, KeyIter};
 
