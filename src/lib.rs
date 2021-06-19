@@ -238,6 +238,12 @@ macro_rules! encode_k_v {
   };
 }
 
+macro_rules! encode {
+  ($i:ident, $fn:expr) => {
+    $i.encode(&mut |$i| $fn)
+  };
+}
+
 // write tx TxDb
 impl<
     'a,
@@ -259,8 +265,22 @@ impl<
   }
 
   #[inline]
-  pub fn rm1<IntoV: Into<Option<&'a V>>>(&mut self, k: &K, v: IntoV) -> Result<bool, Error> {
-    set_root!(btree::del(tx, &mut self.db, k, v.into()), self, tx)
+  pub fn rm1<IntoV: Into<Option<&'b RV>>>(&mut self, k: &RK, into_v: IntoV) -> Result<bool, Error> {
+    match into_v.into() {
+      Some(v) => {
+        encode_k_v!(
+          k,
+          v,
+          set_root!(btree::del(tx, &mut self.db, k, Some(v)), self, tx)
+        )
+      }
+      None => {
+        encode!(
+          k,
+          set_root!(btree::del(tx, &mut self.db, k, None), self, tx)
+        )
+      }
+    }
   }
 
   #[inline]

@@ -46,7 +46,7 @@ impl<
     db_page_r!(self, db, db.exist(k, v))
   }
 
-  pub fn rm1<IntoV: Into<Option<&'a V>>>(&self, k: &K, v: IntoV) -> Result<bool, Error> {
+  pub fn rm1<IntoV: Into<Option<&'a RV>>>(&self, k: &RK, v: IntoV) -> Result<bool, Error> {
     db_page_w!(self, db, db.rm1(k, v.into()))
   }
 
