@@ -1,6 +1,6 @@
 mod db;
 use anyhow::Result;
-use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
+use db::{Data, Data2, Hash, DB0, DB1, DB2, DB3, DB4, DB5, TX};
 use sdb::UnsizedStorable;
 
 #[test]
@@ -93,6 +93,17 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
+    let mut db5 = tx.db(&DB5);
+    let data = Data2 {
+      id: 1234,
+      hash: [3, 2, 1],
+    };
+    db5.put(&1, &data)?;
+    println!("- print all key db5");
+    for entry in db5.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
     //write tx will auto commit when drop
   }
   {

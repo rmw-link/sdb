@@ -21,7 +21,8 @@ First step : static define db , see [tests/db.rs](./tests/db.rs)
 I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for static init ( use git version because of [bug](https://gitlab.com/okannen/static_init/-/issues/7) ) .  You can use [lazy_static](https://docs.rs/crate/lazy_static) instead .
 
 ```rust
-use sdb::{encode_decode, sdb, Db, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
+use desse::{Desse, DesseSized};
+use sdb::{encode_decode, sdb, Db, DbEv, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -82,6 +83,28 @@ sdb!(Data);
 #[dynamic]
 pub static DB4: Db<'static, u64, Data> = TX.db(4);
 
+#[derive(DesseSized, Desse)]
+pub struct Data2 {
+  pub hash: [u8; 3],
+  pub id: u64,
+}
+
+#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse)]
+pub struct Data2Desse([u8; Data2::SIZE]);
+
+use sdb::direct_repr;
+direct_repr!(Data2Desse);
+
+#[dynamic]
+pub static DB5: DbEv<'static, u64, Data2Desse, Data2> = TX.db(5);
+
+impl EncodeDecode<Data2Desse> for Data2 {
+  #[inline]
+  fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
+    next(&Data2Desse(self.serialize()))
+  }
+}
+
 ```
 
 Second step : use it , see [tests/main.rs](./tests/main.rs)
@@ -89,7 +112,7 @@ Second step : use it , see [tests/main.rs](./tests/main.rs)
 ```rust
 mod db;
 use anyhow::Result;
-use db::{Data, Hash, DB0, DB1, DB2, DB3, DB4, TX};
+use db::{Data, Data2, Hash, DB0, DB1, DB2, DB3, DB4, DB5, TX};
 use sdb::UnsizedStorable;
 
 #[test]
@@ -182,6 +205,17 @@ fn main() -> Result<()> {
       println!("> {:?} {:?}", k, v)
     }
 
+    let mut db5 = tx.db(&DB5);
+    let data = Data2 {
+      id: 1234,
+      hash: [3, 2, 1],
+    };
+    db5.put(&1, &data)?;
+    println!("- print all key db5");
+    for entry in db5.iter(None, None)? {
+      let (k, v) = entry?;
+      println!("> {:?} {:?}", k, v)
+    }
     //write tx will auto commit when drop
   }
   {

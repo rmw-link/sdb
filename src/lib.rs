@@ -7,7 +7,7 @@ use iter::{key_iter, KeyIter};
 
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
-pub use sanakirja::{btree, Commit, Error, Storable, UnsizedStorable};
+pub use sanakirja::{btree, direct_repr, Commit, Error, Storable, UnsizedStorable};
 use sanakirja::{Env, LoadPage, RootDb};
 use std::convert::Into;
 use std::fs::create_dir_all;
@@ -44,6 +44,9 @@ type UP<K, V> = btree::page_unsized::Page<K, V>;
 
 pub type Db<'a, K, V> = DbPage<'a, K, V, Page<K, V>, K, V>;
 pub type DbU<'a, K, V> = DbPage<'a, K, V, UP<K, V>, K, V>;
+pub type DbEk<'a, K, V, RK> = DbPage<'a, K, V, UP<K, V>, RK, V>;
+pub type DbEv<'a, K, V, RV> = DbPage<'a, K, V, UP<K, V>, K, RV>;
+pub type DbEkv<'a, K, V, RK, RV> = DbPage<'a, K, V, UP<K, V>, RK, RV>;
 
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);
