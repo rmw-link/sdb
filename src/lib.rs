@@ -21,19 +21,23 @@ use std::result::Result;
 macro_rules! sdb {
   ($cls:ident) => {
     sanakirja::direct_repr!($cls);
-    encode_decode!($cls);
+    sdb::encode_decode!($cls);
   };
 }
 
 pub struct TxDb<
+  'a,
   K: Storable + PartialEq + ?Sized,
   V: Storable + PartialEq + ?Sized,
   T: LoadPage,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
+  RK: ?Sized + EncodeDecode<K>,
+  RV: ?Sized + EncodeDecode<V>,
 > {
   db: Db_<K, V, P>,
   id: usize,
   tx: *mut T,
+  pub(crate) _rkv: PhantomData<(&'a RK, &'a RV)>,
 }
 
 type UP<K, V> = btree::page_unsized::Page<K, V>;
@@ -56,11 +60,12 @@ macro_rules! tx {
       >(
         &self,
         db: &DbPage<K, V, P, RK, RV>,
-      ) -> TxDb<K, V, $tx<'a>, P> {
+      ) -> TxDb<K, V, $tx<'a>, P, RK, RV> {
         TxDb {
           id: db.id,
           db: self.btree(db.id),
           tx: self.ptr() as *mut $tx,
+          _rkv: PhantomData {},
         }
       }
     }
@@ -157,11 +162,14 @@ macro_rules! iter {
 // all TxDb
 impl<
     'a,
+    'b,
     K: 'a + PartialEq + Storable + ?Sized,
     V: 'a + PartialEq + Storable + ?Sized,
     T: 'a + LoadPage,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  > TxDb<K, V, T, P>
+    RK: ?Sized + EncodeDecode<K>,
+    RV: ?Sized + EncodeDecode<V>,
+  > TxDb<'b, K, V, T, P, RK, RV>
 {
   iter!(Iter, iter, btree::iter);
   iter!(RevIter, riter, btree::rev_iter);
@@ -223,7 +231,9 @@ impl<
     K: 'a + Storable + PartialEq + ?Sized,
     V: 'a + Storable + PartialEq + ?Sized,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  > TxDb<K, V, MutTxnEnv<'a>, P>
+    RK: ?Sized + EncodeDecode<K>,
+    RV: ?Sized + EncodeDecode<V>,
+  > TxDb<'a, K, V, MutTxnEnv<'a>, P, RK, RV>
 {
   pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, Error> {
     set_root!(btree::put(tx, &mut self.db, k, v), self, tx)

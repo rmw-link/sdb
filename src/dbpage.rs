@@ -107,6 +107,5 @@ macro_rules! encode_decode {
     encode_decode!($cls, $cls);
   };
 }
-
 encode_decode!([u8]);
 encode_decode!(u64);
