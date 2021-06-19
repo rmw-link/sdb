@@ -284,18 +284,21 @@ impl<
   }
 
   #[inline]
-  pub fn rm(&mut self, k: &K) -> Result<usize, Error> {
-    set_root!(
-      {
-        let db = &mut self.db;
-        let mut n = 0usize;
-        while btree::del(tx, db, k, None)? {
-          n += 1
-        }
-        Ok(n)
-      },
-      self,
-      tx
+  pub fn rm(&mut self, k: &RK) -> Result<usize, Error> {
+    encode!(
+      k,
+      set_root!(
+        {
+          let db = &mut self.db;
+          let mut n = 0usize;
+          while btree::del(tx, db, k, None)? {
+            n += 1
+          }
+          Ok(n)
+        },
+        self,
+        tx
+      )
     )
   }
 }

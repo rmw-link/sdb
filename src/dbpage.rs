@@ -34,7 +34,7 @@ impl<
     db_page_w!(self, db, db.put(k, v))
   }
 
-  pub fn rm(&self, k: &K) -> Result<usize, Error> {
+  pub fn rm(&self, k: &RK) -> Result<usize, Error> {
     db_page_w!(self, db, db.rm(k))
   }
 
