@@ -228,15 +228,16 @@ macro_rules! set_root {
 // write tx TxDb
 impl<
     'a,
+    'b,
     K: 'a + Storable + PartialEq + ?Sized,
     V: 'a + Storable + PartialEq + ?Sized,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
     RK: ?Sized + EncodeDecode<K>,
     RV: ?Sized + EncodeDecode<V>,
-  > TxDb<'a, K, V, MutTxnEnv<'a>, P, RK, RV>
+  > TxDb<'b, K, V, MutTxnEnv<'b>, P, RK, RV>
 {
-  pub fn put(&mut self, k: &K, v: &V) -> std::result::Result<bool, Error> {
-    set_root!(btree::put(tx, &mut self.db, k, v), self, tx)
+  pub fn put(&mut self, k: &RK, v: &RV) -> std::result::Result<bool, Error> {
+    k.encode(&mut |k| v.encode(&mut |v| set_root!(btree::put(tx, &mut self.db, k, v), self, tx)))
   }
 
   pub fn rm1<IntoV: Into<Option<&'a V>>>(&mut self, k: &K, v: IntoV) -> Result<bool, Error> {

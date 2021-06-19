@@ -272,7 +272,7 @@ impl<
     RV: ?Sized + EncodeDecode<V>,
   > DbPage<'a, K, V, P, RK, RV>
 {
-  pub fn put(&self, k: &K, v: &V) -> Result<bool, Error> {
+  pub fn put(&self, k: &RK, v: &RV) -> Result<bool, Error> {
     db_page_w!(self, db, db.put(k, v))
   }
 
@@ -329,7 +329,7 @@ pub struct DbPage<
   pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
 pub trait EncodeDecode<T: ?Sized> {
-  fn encode<R: Sized>(&self, next: &dyn Fn(&T) -> R) -> R;
+  fn encode<R: Sized>(&self, next: &mut dyn FnMut(&T) -> R) -> R;
   /*
   fn decode(val: &T) -> Self;
   */
@@ -340,7 +340,7 @@ macro_rules! encode_decode {
   ($cls:ty, $t:ty) => {
     impl EncodeDecode<$t> for $cls {
       #[inline]
-      fn encode<R: Sized>(&self, next: &dyn Fn(&$t) -> R) -> R {
+      fn encode<R: Sized>(&self, next: &mut dyn FnMut(&$t) -> R) -> R {
         next(self)
       }
     }
