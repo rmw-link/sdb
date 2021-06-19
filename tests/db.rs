@@ -80,4 +80,8 @@ impl EncodeDecode<Data2Desse> for Data2 {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
     next(&Data2Desse(self.serialize()))
   }
+  #[inline]
+  fn decode(val: &Data2Desse) -> &Data2 {
+    &Data2::deserialize_from(&val.0)
+  }
 }
