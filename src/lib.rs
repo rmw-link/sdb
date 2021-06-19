@@ -139,6 +139,18 @@ impl<'a> Drop for WriteTx<'a> {
   }
 }
 
+macro_rules! encode {
+  ($i:ident, $fn:expr) => {
+    $i.encode(&mut |$i| $fn)
+  };
+}
+
+macro_rules! encode_k_v {
+  ($k:ident, $v:ident, $fn:expr) => {
+    encode!($k, encode!($v, $fn))
+  };
+}
+
 macro_rules! iter {
   ($cls:ident, $fn:ident, $real:expr) => {
     #[inline]
@@ -185,37 +197,41 @@ impl<
   }
 
   #[inline]
-  pub fn exist(&self, k: &K, v: &V) -> Result<bool, <T as LoadPage>::Error> {
-    let tx = unsafe { &*self.tx };
-    match btree::get(tx, &self.db, k, Some(v))? {
-      None => Ok(false),
-      Some((key, val)) => {
-        if key == k {
-          if val == v {
-            Ok(true)
+  pub fn exist(&self, k: &RK, v: &RV) -> Result<bool, <T as LoadPage>::Error> {
+    encode_k_v!(k, v, {
+      let tx = unsafe { &*self.tx };
+      match btree::get(tx, &self.db, k, Some(v))? {
+        None => Ok(false),
+        Some((key, val)) => {
+          if key == k {
+            if val == v {
+              Ok(true)
+            } else {
+              Ok(false)
+            }
           } else {
             Ok(false)
           }
-        } else {
-          Ok(false)
         }
       }
-    }
+    })
   }
 
   #[inline]
-  pub fn one(&self, k: &K) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
-    let tx = unsafe { &*self.tx };
-    match btree::get(tx, &self.db, k, None)? {
-      None => Ok(None),
-      Some((key, v)) => {
-        if key == k {
-          Ok(Some(v))
-        } else {
-          Ok(None)
+  pub fn one(&self, k: &RK) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
+    encode!(k, {
+      let tx = unsafe { &*self.tx };
+      match btree::get(tx, &self.db, k, None)? {
+        None => Ok(None),
+        Some((key, v)) => {
+          if key == k {
+            Ok(Some(v))
+          } else {
+            Ok(None)
+          }
         }
       }
-    }
+    })
   }
 }
 
@@ -230,18 +246,6 @@ macro_rules! set_root {
     }
     r
   }};
-}
-
-macro_rules! encode_k_v {
-  ($k:ident, $v:ident, $fn:expr) => {
-    $k.encode(&mut |$k| $v.encode(&mut |$v| $fn))
-  };
-}
-
-macro_rules! encode {
-  ($i:ident, $fn:expr) => {
-    $i.encode(&mut |$i| $fn)
-  };
 }
 
 // write tx TxDb

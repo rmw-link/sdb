@@ -38,11 +38,11 @@ impl<
     db_page_w!(self, db, db.rm(k))
   }
 
-  pub fn one(&self, k: &'a K) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
+  pub fn one(&self, k: &'a RK) -> Result<Option<&'a V>, <TxnEnv as LoadPage>::Error> {
     db_page_r!(self, db, db.one(k))
   }
 
-  pub fn exist(&self, k: &K, v: &V) -> Result<bool, <TxnEnv as LoadPage>::Error> {
+  pub fn exist(&self, k: &RK, v: &RV) -> Result<bool, <TxnEnv as LoadPage>::Error> {
     db_page_r!(self, db, db.exist(k, v))
   }
 
