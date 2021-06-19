@@ -218,6 +218,7 @@ fn main() -> Result<()> {
     }
     //write tx will auto commit when drop
   }
+
   {
     println!("# read transaction");
 

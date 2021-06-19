@@ -141,6 +141,7 @@ impl<'a> Drop for WriteTx<'a> {
 
 macro_rules! iter {
   ($cls:ident, $fn:ident, $real:expr) => {
+    #[inline]
     pub fn $fn<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
       &self,
       key: OptionK,
@@ -177,11 +178,13 @@ impl<
   iter!(Iter, iter, btree::iter);
   iter!(RevIter, riter, btree::rev_iter);
 
+  #[inline]
   pub fn key_iter(&self, key: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
     let tx = unsafe { &*self.tx };
     key_iter(tx, &self.db, key)
   }
 
+  #[inline]
   pub fn exist(&self, k: &K, v: &V) -> Result<bool, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
     match btree::get(tx, &self.db, k, Some(v))? {
@@ -200,6 +203,7 @@ impl<
     }
   }
 
+  #[inline]
   pub fn one(&self, k: &K) -> Result<Option<&'a V>, <T as LoadPage>::Error> {
     let tx = unsafe { &*self.tx };
     match btree::get(tx, &self.db, k, None)? {
@@ -228,6 +232,12 @@ macro_rules! set_root {
   }};
 }
 
+macro_rules! encode_k_v {
+  ($k:ident, $v:ident, $fn:expr) => {
+    $k.encode(&mut |$k| $v.encode(&mut |$v| $fn))
+  };
+}
+
 // write tx TxDb
 impl<
     'a,
@@ -239,14 +249,21 @@ impl<
     RV: ?Sized + EncodeDecode<V>,
   > TxDb<'b, K, V, MutTxnEnv<'b>, P, RK, RV>
 {
+  #[inline]
   pub fn put(&mut self, k: &RK, v: &RV) -> std::result::Result<bool, Error> {
-    k.encode(&mut |k| v.encode(&mut |v| set_root!(btree::put(tx, &mut self.db, k, v), self, tx)))
+    encode_k_v!(
+      k,
+      v,
+      set_root!(btree::put(tx, &mut self.db, k, v), self, tx)
+    )
   }
 
+  #[inline]
   pub fn rm1<IntoV: Into<Option<&'a V>>>(&mut self, k: &K, v: IntoV) -> Result<bool, Error> {
     set_root!(btree::del(tx, &mut self.db, k, v.into()), self, tx)
   }
 
+  #[inline]
   pub fn rm(&mut self, k: &K) -> Result<usize, Error> {
     set_root!(
       {
