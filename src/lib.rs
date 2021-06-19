@@ -265,8 +265,8 @@ impl<
   }
 
   #[inline]
-  pub fn rm1<IntoV: Into<Option<&'b RV>>>(&mut self, k: &RK, into_v: IntoV) -> Result<bool, Error> {
-    match into_v.into() {
+  pub fn rm1<IntoV: Into<Option<&'b RV>>>(&mut self, k: &RK, v: IntoV) -> Result<bool, Error> {
+    match v.into() {
       Some(v) => {
         encode_k_v!(
           k,
