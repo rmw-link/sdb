@@ -21,7 +21,7 @@ use std::result::Result;
 macro_rules! sdb {
   ($cls:ident) => {
     sanakirja::direct_repr!($cls);
-    impl sdb::EncodeDecode<$cls> for $cls {}
+    encode_decode!($cls);
   };
 }
 

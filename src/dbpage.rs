@@ -74,22 +74,6 @@ impl<
   }
 }
 
-pub trait EncodeDecode<T: ?Sized> {
-  /*
-  fn encode(&self) -> &T;
-  fn decode(val: &T) -> Self;
-  */
-}
-
-impl EncodeDecode<u64> for u64 {}
-
-impl EncodeDecode<[u8]> for [u8] {
-  /*
-    fn encode(&self) -> &[u8]{self};
-    fn decode(val: &[u8]) -> [u8]{*val};
-  */
-}
-
 pub struct DbPage<
   'a,
   K: ?Sized + Storable + PartialEq,
@@ -102,3 +86,27 @@ pub struct DbPage<
   pub id: usize,
   pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
+pub trait EncodeDecode<T: ?Sized> {
+  fn encode<R: Sized>(&self, next: &dyn Fn(&T) -> R) -> R;
+  /*
+  fn decode(val: &T) -> Self;
+  */
+}
+
+#[macro_export]
+macro_rules! encode_decode {
+  ($cls:ty, $t:ty) => {
+    impl EncodeDecode<$t> for $cls {
+      #[inline]
+      fn encode<R: Sized>(&self, next: &dyn Fn(&$t) -> R) -> R {
+        next(self)
+      }
+    }
+  };
+  ($cls:ty) => {
+    encode_decode!($cls, $cls);
+  };
+}
+
+encode_decode!([u8]);
+encode_decode!(u64);

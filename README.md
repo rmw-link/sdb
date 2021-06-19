@@ -21,7 +21,7 @@ First step : static define db , see [tests/db.rs](./tests/db.rs)
 I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for static init ( use git version because of [bug](https://gitlab.com/okannen/static_init/-/issues/7) ) .  You can use [lazy_static](https://docs.rs/crate/lazy_static) instead .
 
 ```rust
-use sdb::{sdb, Db, DbU, Storable, Tx, UnsizedStorable};
+use sdb::{encode_decode, sdb, Db, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -190,9 +190,9 @@ fn main() -> Result<()> {
     let tx = TX.r()?; //
     let db0 = tx.db(&DB0);
 
-    println!("- exist key 2 value 1 > {:?}", db0.exist(&2, &1)?);
+    dbg!(db0.exist(&2, &1)?);
     for i in [1, 2, 5] {
-      println!("- get key {} > {:?}", i, db0.one(&i)?);
+      dbg!(i, db0.one(&i)?);
     }
 
     println!("- print all key");
@@ -316,22 +316,6 @@ impl<
   }
 }
 
-pub trait EncodeDecode<T: ?Sized> {
-  /*
-  fn encode(&self) -> &T;
-  fn decode(val: &T) -> Self;
-  */
-}
-
-impl EncodeDecode<u64> for u64 {}
-
-impl EncodeDecode<[u8]> for [u8] {
-  /*
-    fn encode(&self) -> &[u8]{self};
-    fn decode(val: &[u8]) -> [u8]{*val};
-  */
-}
-
 pub struct DbPage<
   'a,
   K: ?Sized + Storable + PartialEq,
@@ -344,6 +328,30 @@ pub struct DbPage<
   pub id: usize,
   pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
+pub trait EncodeDecode<T: ?Sized> {
+  fn encode<R: Sized>(&self, next: &dyn Fn(&T) -> R) -> R;
+  /*
+  fn decode(val: &T) -> Self;
+  */
+}
+
+#[macro_export]
+macro_rules! encode_decode {
+  ($cls:ty, $t:ty) => {
+    impl EncodeDecode<$t> for $cls {
+      #[inline]
+      fn encode<R: Sized>(&self, next: &dyn Fn(&$t) -> R) -> R {
+        next(self)
+      }
+    }
+  };
+  ($cls:ty) => {
+    encode_decode!($cls, $cls);
+  };
+}
+
+encode_decode!([u8]);
+encode_decode!(u64);
 
 ```
 

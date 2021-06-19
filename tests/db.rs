@@ -1,4 +1,4 @@
-use sdb::{sdb, Db, DbU, Storable, Tx, UnsizedStorable};
+use sdb::{encode_decode, sdb, Db, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;

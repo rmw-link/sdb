@@ -101,9 +101,9 @@ fn main() -> Result<()> {
     let tx = TX.r()?; //
     let db0 = tx.db(&DB0);
 
-    println!("- exist key 2 value 1 > {:?}", db0.exist(&2, &1)?);
+    dbg!(db0.exist(&2, &1)?);
     for i in [1, 2, 5] {
-      println!("- get key {} > {:?}", i, db0.one(&i)?);
+      dbg!(i, db0.one(&i)?);
     }
 
     println!("- print all key");
