@@ -107,5 +107,28 @@ macro_rules! encode_decode {
     encode_decode!($cls, $cls);
   };
 }
-encode_decode!([u8]);
-encode_decode!(u64);
+
+macro_rules! encode_decode_li {
+  ( $( $x:ty ),* ) => {
+    $(encode_decode!($x);)*
+  };
+}
+
+encode_decode_li!(
+  [u8],
+  bool,
+  i8,
+  u8,
+  i16,
+  u16,
+  i32,
+  u32,
+  i64,
+  u64,
+  i128,
+  u128,
+  isize,
+  usize,
+  f32,
+  f64
+);
