@@ -1,5 +1,6 @@
 use sanakirja::btree::{BTreePage, Cursor, Db_};
 use sanakirja::{LoadPage, Storable};
+use std::marker::PhantomData;
 
 pub fn key_iter<'a, T, K, V, P>(
   txn: &'a T,
@@ -14,13 +15,31 @@ where
 {
   let mut cursor = Cursor::new(txn, db)?;
 
-  let val = cursor.set(txn, key, None)?;
-  if let Some((key_c, _)) = val {
-    println!("{:?} {:?} ---<<", key, key == key_c);
-  } else {
-    println!("{:?} {:?} ---<<", key, val);
-  };
-  Ok(Box::new(KeyIter { cursor, txn, key }))
+  match cursor.set(txn, key, None)? {
+    Some((key_c, _)) => {
+      println!("{:?} {:?} ---<<", key, key == key_c);
+      Ok(Box::new(KeyIter {
+        cursor,
+        txn,
+        key: key_c,
+      }))
+    }
+    None => Ok(Box::new(StopIter::<T, K, V>(PhantomData {}))),
+  }
+}
+
+pub struct StopIter<'a, T: LoadPage, K: PartialEq + Storable + ?Sized, V: Storable + ?Sized>(
+  PhantomData<(&'a T, &'a K, &'a V)>,
+);
+
+impl<'a, T: LoadPage, K: PartialEq + Storable + ?Sized + 'a, V: Storable + ?Sized + 'a> Iterator
+  for StopIter<'a, T, K, V>
+{
+  type Item = Result<(&'a K, &'a V), T::Error>;
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    None
+  }
 }
 
 pub struct KeyIter<
@@ -44,6 +63,7 @@ impl<
   > Iterator for KeyIter<'a, T, K, V, P>
 {
   type Item = Result<(&'a K, &'a V), T::Error>;
+  #[inline]
   fn next(&mut self) -> Option<Self::Item> {
     let entry = self.cursor.next(self.txn).transpose();
     match entry {
