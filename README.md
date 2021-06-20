@@ -340,7 +340,7 @@ impl<
     db_page_r!(self, db, db.key_iter(k))
   }
 
-  pub fn iter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
+  pub fn iter<OptionK: Into<Option<&'a RK>>, OptionV: Into<Option<&'a RV>>>(
     &self,
     k: OptionK,
     v: OptionV,
@@ -348,7 +348,7 @@ impl<
     db_page_r!(self, db, db.iter(k.into(), v.into()))
   }
 
-  pub fn riter<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
+  pub fn riter<OptionK: Into<Option<&'a RK>>, OptionV: Into<Option<&'a RV>>>(
     &self,
     k: OptionK,
     v: OptionV,

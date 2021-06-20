@@ -154,23 +154,31 @@ macro_rules! encode_k_v {
 macro_rules! iter {
   ($cls:ident, $fn:ident, $real:expr) => {
     #[inline]
-    pub fn $fn<OptionK: Into<Option<&'a K>>, OptionV: Into<Option<&'a V>>>(
+    pub fn $fn<OptionK: Into<Option<&'a RK>>, OptionV: Into<Option<&'a RV>>>(
       &self,
-      key: OptionK,
-      value: OptionV,
+      k: OptionK,
+      v: OptionV,
     ) -> Result<$cls<'a, T, K, V, P>, <T as LoadPage>::Error> {
-      let tx = unsafe { &*self.tx };
-      $real(
-        tx,
-        &self.db,
-        match key.into() {
-          None => None,
-          Some(k) => match value.into() {
-            None => Some((k, None)),
-            Some(v) => Some((k, Some(v))),
-          },
+      match k.into() {
+        None => {
+          let tx = unsafe { &*self.tx };
+          $real(tx, &self.db, None)
+        }
+        Some(k) => match v.into() {
+          Some(v) => {
+            encode_k_v!(k, v, {
+              let tx = unsafe { &*self.tx };
+              $real(tx, &self.db, Some((k, Some(v))))
+            })
+          }
+          None => {
+            encode!(k, {
+              let tx = unsafe { &*self.tx };
+              $real(tx, &self.db, Some((k, None)))
+            })
+          }
         },
-      )
+      }
     }
   };
 }
@@ -183,15 +191,15 @@ impl<
     V: 'a + PartialEq + Storable + ?Sized,
     T: 'a + LoadPage,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-    RK: ?Sized + EncodeDecode<K>,
-    RV: ?Sized + EncodeDecode<V>,
+    RK: 'a + ?Sized + EncodeDecode<K>,
+    RV: 'a + ?Sized + EncodeDecode<V>,
   > TxDb<'b, K, V, T, P, RK, RV>
 {
   iter!(Iter, iter, btree::iter);
   iter!(RevIter, riter, btree::rev_iter);
 
   #[inline]
-  pub fn key_iter(&self, k: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
+  pub fn key_iter<'c>(&self, k: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
     let tx = unsafe { &*self.tx };
     key_iter(tx, &self.db, k)
   }
