@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 pub fn key_iter<'a, T, K, V, P>(
   txn: &'a T,
   db: &Db_<K, V, P>,
-  key: &'a K,
+  key: &K,
 ) -> Result<Box<dyn Iterator<Item = Result<(&'a K, &'a V), T::Error>> + 'a>, T::Error>
 where
   T: LoadPage,
@@ -16,14 +16,11 @@ where
   let mut cursor = Cursor::new(txn, db)?;
 
   match cursor.set(txn, key, None)? {
-    Some((key_c, _)) => {
-      println!("{:?} {:?} ---<<", key, key == key_c);
-      Ok(Box::new(KeyIter {
-        cursor,
-        txn,
-        key: key_c,
-      }))
-    }
+    Some((key_c, _)) => Ok(Box::new(KeyIter {
+      cursor,
+      txn,
+      key: key_c,
+    })),
     None => Ok(Box::new(StopIter::<T, K, V>(PhantomData {}))),
   }
 }

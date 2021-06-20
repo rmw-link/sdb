@@ -336,7 +336,7 @@ impl<
 
   pub fn key_iter(
     &self,
-    k: &'a K,
+    k: &'a RK,
   ) -> Result<
     Box<dyn Iterator<Item = Result<(&'a K, &'a V), <TxnEnv as LoadPage>::Error>> + 'a>,
     <TxnEnv as LoadPage>::Error,

@@ -203,10 +203,10 @@ impl<
   #[inline]
   pub fn key_iter<'c>(
     &self,
-    k: &'a K,
+    k: &'a RK,
   ) -> Result<Box<dyn Iterator<Item = Result<(&'a K, &'a V), T::Error>> + 'a>, T::Error> {
     let tx = unsafe { &*self.tx };
-    key_iter(tx, &self.db, k)
+    encode!(k, key_iter(tx, &self.db, k))
   }
 
   #[inline]
