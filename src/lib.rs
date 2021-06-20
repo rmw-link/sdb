@@ -191,9 +191,9 @@ impl<
   iter!(RevIter, riter, btree::rev_iter);
 
   #[inline]
-  pub fn key_iter(&self, key: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
+  pub fn key_iter(&self, k: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
     let tx = unsafe { &*self.tx };
-    key_iter(tx, &self.db, key)
+    key_iter(tx, &self.db, k)
   }
 
   #[inline]

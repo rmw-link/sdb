@@ -103,10 +103,12 @@ impl EncodeDecode<Data2Desse> for Data2 {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
     next(&Data2Desse(self.serialize()))
   }
+  /*
   #[inline]
   fn decode(val: &Data2Desse) -> &Data2 {
     &Data2::deserialize_from(&val.0)
   }
+  */
 }
 
 ```
@@ -370,7 +372,7 @@ pub struct DbPage<
 
 pub trait EncodeDecode<T: ?Sized> {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&T) -> R) -> R;
-  fn decode(val: &T) -> &Self;
+  // fn decode(val: &T) -> &Self;
 }
 
 #[macro_export]
@@ -381,10 +383,12 @@ macro_rules! encode_decode {
       fn encode<R: Sized>(&self, next: &mut dyn FnMut(&$t) -> R) -> R {
         next(self)
       }
-      #[inline]
-      fn decode(val: &$t) -> &$cls {
-        val
-      }
+      /*
+          #[inline]
+          fn decode(val: &$t) -> &$cls {
+            val
+          }
+      */
     }
   };
   ($cls:ty) => {
