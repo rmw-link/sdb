@@ -1,9 +1,11 @@
+#![feature(associated_type_defaults)]
+
 mod dbpage;
 pub use dbpage::{DbPage, EncodeDecode};
 mod tx;
 pub use tx::{MutTxnEnv, Tx, TxnEnv};
 mod iter;
-use iter::{key_iter, KeyIter};
+use iter::key_iter;
 
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};
@@ -190,7 +192,7 @@ impl<
     K: 'a + PartialEq + Storable + ?Sized,
     V: 'a + PartialEq + Storable + ?Sized,
     T: 'a + LoadPage,
-    P: BTreeMutPage<K, V> + BTreePage<K, V>,
+    P: 'a + BTreeMutPage<K, V> + BTreePage<K, V>,
     RK: 'a + ?Sized + EncodeDecode<K>,
     RV: 'a + ?Sized + EncodeDecode<V>,
   > TxDb<'b, K, V, T, P, RK, RV>
@@ -199,7 +201,10 @@ impl<
   iter!(RevIter, riter, btree::rev_iter);
 
   #[inline]
-  pub fn key_iter<'c>(&self, k: &'a K) -> Result<KeyIter<'a, T, K, V, P>, T::Error> {
+  pub fn key_iter<'c>(
+    &self,
+    k: &'a K,
+  ) -> Result<Box<dyn Iterator<Item = Result<(&'a K, &'a V), T::Error>> + 'a>, T::Error> {
     let tx = unsafe { &*self.tx };
     key_iter(tx, &self.db, k)
   }

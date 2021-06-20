@@ -1,4 +1,3 @@
-use crate::iter::KeyIter;
 use crate::tx::{Tx, TxnEnv};
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
@@ -53,7 +52,10 @@ impl<
   pub fn key_iter(
     &self,
     k: &'a K,
-  ) -> Result<KeyIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+  ) -> Result<
+    Box<dyn Iterator<Item = Result<(&'a K, &'a V), <TxnEnv as LoadPage>::Error>> + 'a>,
+    <TxnEnv as LoadPage>::Error,
+  > {
     db_page_r!(self, db, db.key_iter(k))
   }
 

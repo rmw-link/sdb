@@ -147,6 +147,8 @@ fn main() -> Result<()> {
     db0.put(&2, &1)?;
     db0.put(&3, &7)?;
     db0.put(&3, &9)?;
+    db0.put(&5, &1)?;
+    db0.put(&5, &9)?;
 
     println!("- print all key db0");
     for entry in db0.iter(None, None)? {
@@ -155,7 +157,7 @@ fn main() -> Result<()> {
     }
 
     println!("- print db1 where key is 2");
-    for entry in db0.key_iter(&2)? {
+    for entry in db0.key_iter(&4)? {
       let (k, v) = entry?;
       println!("> {:?} {:?}", k, v)
     }
@@ -281,7 +283,6 @@ fn main() -> Result<()> {
 db method you can see [src/dbpage.rs](./src/dbpage.rs)
 
 ```rust
-use crate::iter::KeyIter;
 use crate::tx::{Tx, TxnEnv};
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{BTreeMutPage, BTreePage, Iter, RevIter};
@@ -336,7 +337,10 @@ impl<
   pub fn key_iter(
     &self,
     k: &'a K,
-  ) -> Result<KeyIter<TxnEnv, K, V, P>, <TxnEnv as LoadPage>::Error> {
+  ) -> Result<
+    Box<dyn Iterator<Item = Result<(&'a K, &'a V), <TxnEnv as LoadPage>::Error>> + 'a>,
+    <TxnEnv as LoadPage>::Error,
+  > {
     db_page_r!(self, db, db.key_iter(k))
   }
 
