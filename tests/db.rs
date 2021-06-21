@@ -1,5 +1,5 @@
 use desse::{Desse, DesseSized};
-use sdb::{encode_decode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
+use sdb::{encode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;

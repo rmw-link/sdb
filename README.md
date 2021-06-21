@@ -22,7 +22,7 @@ I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for stati
 
 ```rust
 use desse::{Desse, DesseSized};
-use sdb::{encode_decode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
+use sdb::{encode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -379,7 +379,7 @@ pub trait Encode<T: ?Sized> {
 }
 
 #[macro_export]
-macro_rules! encode_decode {
+macro_rules! encode {
   ($cls:ty, $t:ty) => {
     impl Encode<$t> for $cls {
       #[inline]
@@ -387,26 +387,19 @@ macro_rules! encode_decode {
         next(self)
       }
     }
-
-    impl From<$t> for $cls {
-      #[inline]
-      fn encode<R: Sized>(&self, next: &mut dyn FnMut(&$t) -> R) -> R {
-        next(self)
-      }
-    }
   };
   ($cls:ty) => {
-    encode_decode!($cls, $cls);
+    encode!($cls, $cls);
   };
 }
 
-macro_rules! encode_decode_li {
+macro_rules! encode_li {
   ( $( $x:ty ),* ) => {
-    $(encode_decode!($x);)*
+    $(encode!($x);)*
   };
 }
 
-encode_decode_li!(
+encode_li!(
   [u8],
   bool,
   i8,
