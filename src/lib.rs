@@ -53,6 +53,34 @@ pub type DbEkv<'a, K, V, RK, RV> = DbPage<'a, K, V, UP<K, V>, RK, RV>;
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);
 
+#[macro_export]
+macro_rules! desse {
+  ($cls:ident) => {
+    #[derive(
+      Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse,
+    )]
+    pub struct Data2Desse([u8; Data2::SIZE]);
+
+    sdb::direct_repr!(Data2Desse);
+
+    #[dynamic]
+    pub static DB5: DbEv<'static, u64, Data2Desse, Data2> = TX.db(5);
+
+    impl Encode<Data2Desse> for Data2 {
+      #[inline]
+      fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
+        next(&Data2Desse(self.serialize()))
+      }
+    }
+
+    impl From<&Data2Desse> for Data2 {
+      fn from(v: &Data2Desse) -> Self {
+        Data2::deserialize_from(&v.0)
+      }
+    }
+  };
+}
+
 macro_rules! tx {
   ($cls:ident, $tx:tt) => {
     impl<'a> $cls<'a> {

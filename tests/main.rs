@@ -104,7 +104,7 @@ fn main() -> Result<()> {
     println!("- print all key db5");
     for entry in db5.iter(None, None)? {
       let (k, v) = entry?;
-      println!("> {:?} {:?}", k, v)
+      println!("> {:?} {:?}", k, Data2::from(v))
     }
     //write tx will auto commit when drop
   }

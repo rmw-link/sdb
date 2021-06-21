@@ -1,5 +1,5 @@
 use desse::{Desse, DesseSized};
-use sdb::{encode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
+use sdb::{desse, encode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -60,13 +60,18 @@ sdb!(Data);
 #[dynamic]
 pub static DB4: Db<'static, u64, Data> = TX.db(4);
 
-#[derive(DesseSized, Desse)]
+#[derive(DesseSized, Desse, Debug)]
 pub struct Data2 {
   pub hash: [u8; 3],
   pub id: u64,
 }
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse)]
+desse!(Data2); // the same as below
+
+/*
+#[derive(
+  Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug, DesseSized, Desse,
+)]
 pub struct Data2Desse([u8; Data2::SIZE]);
 
 use sdb::direct_repr;
@@ -80,10 +85,11 @@ impl Encode<Data2Desse> for Data2 {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
     next(&Data2Desse(self.serialize()))
   }
-  /*
-  #[inline]
-  fn decode(val: &Data2Desse) -> &Data2 {
-    &Data2::deserialize_from(&val.0)
-  }
-  */
 }
+
+impl From<&Data2Desse> for Data2 {
+  fn from(v: &Data2Desse) -> Self {
+    Data2::deserialize_from(&v.0)
+  }
+}
+*/
