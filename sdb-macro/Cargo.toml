@@ -1,0 +1,21 @@
+cargo-features = ["edition2021"]
+
+[package]
+name = "sdb-macro"
+authors = [ "rmw <i@rmw.link>" ]
+edition = "2021"
+version = "0.0.1"
+license = "AGPL-3.0-or-later"
+description="a user-friendly wrapper for sanakirja database"
+homepage = "https://github.com/rmw-link/sdb"
+repository = "https://github.com/rmw-link/sdb"
+documentation = "https://docs.rs/sdb"
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.9"
+syn = "1.0.73"
+

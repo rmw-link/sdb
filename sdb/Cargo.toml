@@ -1,0 +1,25 @@
+cargo-features = ["edition2021"]
+
+[package]
+name = "sdb"
+authors = [ "rmw <i@rmw.link>" ]
+edition = "2021"
+version = "0.0.6"
+license = "AGPL-3.0-or-later"
+description="a user-friendly wrapper for sanakirja database"
+homepage = "https://github.com/rmw-link/sdb"
+repository = "https://github.com/rmw-link/sdb"
+documentation = "https://docs.rs/sdb"
+readme = "README.md"
+
+[dependencies]
+sanakirja = "1.2.5"
+desse = { version="0.2.1", optional = true }
+
+[features]
+default = ["desse"]
+
+[dev-dependencies]
+static_init= {git="https://gitlab.com/vkahl/static_init.git"}
+anyhow = "1.0.41"
+
