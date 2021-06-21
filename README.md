@@ -22,7 +22,7 @@ I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for stati
 
 ```rust
 use desse::{Desse, DesseSized};
-use sdb::{encode_decode, sdb, Db, DbEv, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
+use sdb::{encode_decode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -98,7 +98,7 @@ direct_repr!(Data2Desse);
 #[dynamic]
 pub static DB5: DbEv<'static, u64, Data2Desse, Data2> = TX.db(5);
 
-impl EncodeDecode<Data2Desse> for Data2 {
+impl Encode<Data2Desse> for Data2 {
   #[inline]
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
     next(&Data2Desse(self.serialize()))
@@ -310,8 +310,8 @@ impl<
     K: ?Sized + Storable + PartialEq,
     V: ?Sized + Storable + PartialEq,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-    RK: ?Sized + EncodeDecode<K>,
-    RV: ?Sized + EncodeDecode<V>,
+    RK: ?Sized + Encode<K>,
+    RV: ?Sized + Encode<V>,
   > DbPage<'a, K, V, P, RK, RV>
 {
   pub fn put(&self, k: &RK, v: &RV) -> Result<bool, Error> {
@@ -366,33 +366,26 @@ pub struct DbPage<
   K: ?Sized + Storable + PartialEq,
   V: ?Sized + Storable + PartialEq,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  RK: ?Sized + EncodeDecode<K>,
-  RV: ?Sized + EncodeDecode<V>,
+  RK: ?Sized + Encode<K>,
+  RV: ?Sized + Encode<V>,
 > {
   pub(crate) tx: &'a Tx,
   pub id: usize,
   pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
 
-pub trait EncodeDecode<T: ?Sized> {
+pub trait Encode<T: ?Sized> {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&T) -> R) -> R;
-  // fn decode(val: &T) -> &Self;
 }
 
 #[macro_export]
 macro_rules! encode_decode {
   ($cls:ty, $t:ty) => {
-    impl EncodeDecode<$t> for $cls {
+    impl Encode<$t> for $cls {
       #[inline]
       fn encode<R: Sized>(&self, next: &mut dyn FnMut(&$t) -> R) -> R {
         next(self)
       }
-      /*
-          #[inline]
-          fn decode(val: &$t) -> &$cls {
-            val
-          }
-      */
     }
   };
   ($cls:ty) => {

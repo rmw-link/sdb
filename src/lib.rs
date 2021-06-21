@@ -1,7 +1,7 @@
 #![feature(associated_type_defaults)]
 
 mod dbpage;
-pub use dbpage::{DbPage, EncodeDecode};
+pub use dbpage::{DbPage, Encode};
 mod tx;
 pub use tx::{MutTxnEnv, Tx, TxnEnv};
 mod iter;
@@ -33,8 +33,8 @@ pub struct TxDb<
   V: Storable + PartialEq + ?Sized,
   T: LoadPage,
   P: BTreeMutPage<K, V> + BTreePage<K, V>,
-  RK: ?Sized + EncodeDecode<K>,
-  RV: ?Sized + EncodeDecode<V>,
+  RK: ?Sized + Encode<K>,
+  RV: ?Sized + Encode<V>,
 > {
   db: Db_<K, V, P>,
   id: usize,
@@ -60,8 +60,8 @@ macro_rules! tx {
         K: ?Sized + Storable + PartialEq,
         V: ?Sized + Storable + PartialEq,
         P: BTreeMutPage<K, V> + BTreePage<K, V>,
-        RK: ?Sized + EncodeDecode<K>,
-        RV: ?Sized + EncodeDecode<V>,
+        RK: ?Sized + Encode<K>,
+        RV: ?Sized + Encode<V>,
       >(
         &self,
         db: &DbPage<K, V, P, RK, RV>,
@@ -193,8 +193,8 @@ impl<
     V: 'a + PartialEq + Storable + ?Sized,
     T: 'a + LoadPage,
     P: 'a + BTreeMutPage<K, V> + BTreePage<K, V>,
-    RK: 'a + ?Sized + EncodeDecode<K>,
-    RV: 'a + ?Sized + EncodeDecode<V>,
+    RK: 'a + ?Sized + Encode<K>,
+    RV: 'a + ?Sized + Encode<V>,
   > TxDb<'b, K, V, T, P, RK, RV>
 {
   iter!(Iter, iter, btree::iter);
@@ -268,8 +268,8 @@ impl<
     K: 'a + Storable + PartialEq + ?Sized,
     V: 'a + Storable + PartialEq + ?Sized,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-    RK: ?Sized + EncodeDecode<K>,
-    RV: ?Sized + EncodeDecode<V>,
+    RK: ?Sized + Encode<K>,
+    RV: ?Sized + Encode<V>,
   > TxDb<'b, K, V, MutTxnEnv<'b>, P, RK, RV>
 {
   #[inline]
@@ -339,8 +339,8 @@ impl Tx {
     K: ?Sized + Storable + PartialEq,
     V: ?Sized + Storable + PartialEq,
     P: BTreeMutPage<K, V> + BTreePage<K, V>,
-    RK: ?Sized + EncodeDecode<K>,
-    RV: ?Sized + EncodeDecode<V>,
+    RK: ?Sized + Encode<K>,
+    RV: ?Sized + Encode<V>,
   >(
     &self,
     id: usize,

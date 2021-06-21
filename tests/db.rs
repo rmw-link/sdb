@@ -1,5 +1,5 @@
 use desse::{Desse, DesseSized};
-use sdb::{encode_decode, sdb, Db, DbEv, DbU, EncodeDecode, Storable, Tx, UnsizedStorable};
+use sdb::{encode_decode, sdb, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -75,7 +75,7 @@ direct_repr!(Data2Desse);
 #[dynamic]
 pub static DB5: DbEv<'static, u64, Data2Desse, Data2> = TX.db(5);
 
-impl EncodeDecode<Data2Desse> for Data2 {
+impl Encode<Data2Desse> for Data2 {
   #[inline]
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&Data2Desse) -> R) -> R {
     next(&Data2Desse(self.serialize()))
