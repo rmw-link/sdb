@@ -4,10 +4,7 @@ set -e
 
 _DIR=$(dirname $(realpath "$0"))
 
-cd $_DIR/sdb_macro
+cd $_DIR
 
 cargo +nightly publish
 
-cd $_DIR/sdb
-
-cargo +nightly publish
