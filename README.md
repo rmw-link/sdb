@@ -89,7 +89,7 @@ pub struct Data2 {
   pub id: u64,
 }
 
-desse!(Data2); // the same as below
+desse!(Data2, Data2Desse); // the same as below
 
 /*
 #[derive(
@@ -116,6 +116,9 @@ impl From<&Data2Desse> for Data2 {
   }
 }
 */
+
+#[dynamic]
+pub static DB5: DbEv<'static, u64, Data2Desse, Data2> = TX.db(5);
 
 ```
 
