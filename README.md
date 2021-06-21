@@ -383,10 +383,12 @@ pub struct DbPage<
   pub(crate) _kvp: PhantomData<(&'a K, &'a V, &'a P, &'a RK, &'a RV)>,
 }
 
+#[cfg(feature = "desse")]
 pub trait Encode<T: ?Sized> {
   fn encode<R: Sized>(&self, next: &mut dyn FnMut(&T) -> R) -> R;
 }
 
+#[cfg(feature = "desse")]
 #[macro_export]
 macro_rules! encode {
   ($cls:ty, $t:ty) => {
@@ -402,12 +404,14 @@ macro_rules! encode {
   };
 }
 
+#[cfg(feature = "desse")]
 macro_rules! encode_li {
   ( $( $x:ty ),* ) => {
     $(encode!($x);)*
   };
 }
 
+#[cfg(feature = "desse")]
 encode_li!(
   [u8],
   bool,

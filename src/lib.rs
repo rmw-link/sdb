@@ -51,6 +51,7 @@ pub type DbEkv<'a, K, V, RK, RV> = DbPage<'a, K, V, UP<K, V>, RK, RV>;
 pub struct WriteTx<'a>(ManuallyDrop<MutTxnEnv<'a>>);
 pub struct ReadTx<'a>(TxnEnv<'a>);
 
+#[cfg(feature = "desse")]
 #[macro_export]
 macro_rules! desse {
   ($cls:ident, $desse:ident) => {
