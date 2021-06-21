@@ -1,4 +1,5 @@
 #![feature(decl_macro)]
+pub use sdb_macros::Sdb;
 mod dbpage;
 pub use dbpage::{DbPage, Encode};
 mod tx;

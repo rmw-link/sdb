@@ -1,7 +1,7 @@
 cargo-features = ["edition2021"]
 
 [package]
-name = "sdb-macro"
+name = "sdb_macro"
 authors = [ "rmw <i@rmw.link>" ]
 edition = "2021"
 version = "0.0.1"
