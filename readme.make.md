@@ -19,19 +19,19 @@ First step : static define db , see [tests/db.rs](./tests/db.rs)
 I use `static_init = {git="https://gitlab.com/vkahl/static_init.git"}` for static init ( use git version because of [bug](https://gitlab.com/okannen/static_init/-/issues/7) ) .  You can use [lazy_static](https://docs.rs/crate/lazy_static) instead .
 
 ```rust
-#include ./tests/db.rs
+#include ./sdb/tests/db.rs
 ```
 
 Second step : use it , see [tests/main.rs](./tests/main.rs)
 
 ```rust
-#include ./tests/main.rs
+#include ./sdb/tests/main.rs
 ```
 
 db method you can see [src/dbpage.rs](./src/dbpage.rs)
 
 ```rust
-#include ./src/dbpage.rs
+#include ./sdb/src/dbpage.rs
 ```
 
 
