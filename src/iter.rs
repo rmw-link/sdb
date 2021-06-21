@@ -66,7 +66,6 @@ impl<
     match entry {
       Some(kv) => match kv {
         Ok((k, _)) => {
-          println!("entry ->>> {:?}", k);
           if k == self.key {
             Some(kv)
           } else {
