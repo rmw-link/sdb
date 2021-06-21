@@ -1,5 +1,5 @@
 use desse::{Desse, DesseSized};
-use sdb::{desse, repr, Db, DbEv, DbU, Encode, Storable, Tx, UnsizedStorable};
+use sdb::{desse, Db, DbEv, DbU, Encode, Sdb, Storable, Tx, UnsizedStorable};
 use static_init::dynamic;
 use std::env;
 use std::path::Path;
@@ -35,10 +35,8 @@ pub static TX: Tx = {
 #[dynamic]
 pub static DB0: Db<'static, u64, u64> = TX.db(0);
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+#[derive(Sdb, Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Hash(pub [u8; 2]);
-
-repr!(Hash);
 
 #[dynamic]
 pub static DB1: Db<'static, u64, Hash> = TX.db(1);
@@ -49,13 +47,11 @@ pub static DB2: DbU<'static, u64, [u8]> = TX.db(2);
 #[dynamic]
 pub static DB3: DbU<'static, [u8], [u8]> = TX.db(3);
 
-#[derive(Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+#[derive(Sdb, Default, Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct Data {
   pub hash: [u8; 3],
   pub id: u64,
 }
-
-repr!(Data);
 
 #[dynamic]
 pub static DB4: Db<'static, u64, Data> = TX.db(4);

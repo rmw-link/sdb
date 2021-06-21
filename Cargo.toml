@@ -1,2 +1,2 @@
 [workspace]
-members = [ "sdb", "sdb-macro" ]
+members = [ "sdb", "sdb_macro" ]

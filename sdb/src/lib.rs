@@ -1,11 +1,13 @@
 #![feature(decl_macro)]
-pub use sdb_macros::Sdb;
 mod dbpage;
 pub use dbpage::{DbPage, Encode};
 mod tx;
 pub use tx::{MutTxnEnv, Tx, TxnEnv};
 mod iter;
 use iter::key_iter;
+
+extern crate sdb_macro;
+pub use sdb_macro::Sdb;
 
 pub use sanakirja::btree::page::Page;
 use sanakirja::btree::{create_db_, BTreeMutPage, BTreePage, Db_, Iter, RevIter};

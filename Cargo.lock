@@ -208,12 +208,12 @@ dependencies = [
  "anyhow",
  "desse",
  "sanakirja",
- "sdb-macro",
+ "sdb_macro",
  "static_init",
 ]
 
 [[package]]
-name = "sdb-macro"
+name = "sdb_macro"
 version = "0.0.1"
 dependencies = [
  "quote 1.0.9",

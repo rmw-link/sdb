@@ -15,7 +15,7 @@ readme = "README.md"
 [dependencies]
 sanakirja = "1.2.5"
 desse = { version="0.2.1", optional = true }
-sdb-macro = { path="../sdb-macro", version="0.0.1" }
+sdb_macro = { path="../sdb_macro", version="0.0.1" }
 
 [features]
 default = ["desse"]
