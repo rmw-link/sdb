@@ -98,7 +98,7 @@ pub trait Encode<T: ?Sized> {
 #[macro_export]
 macro_rules! encode {
   ($cls:ty, $t:ty) => {
-    impl Encode<$t> for $cls {
+    impl $crate::Encode<$t> for $cls {
       #[inline]
       fn encode<R: Sized>(&self, next: &mut dyn FnMut(&$t) -> R) -> R {
         next(self)

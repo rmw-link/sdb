@@ -1,3 +1,4 @@
+#![feature(decl_macro)]
 mod dbpage;
 pub use dbpage::{DbPage, Encode};
 mod tx;
@@ -18,11 +19,13 @@ use std::path::PathBuf;
 use std::result::Result;
 
 #[macro_export]
-macro_rules! sdb {
-  ($cls:ident) => {
-    sanakirja::direct_repr!($cls);
-    sdb::encode!($cls);
-  };
+pub macro repr($cls:ident) {
+  use sdb::direct_repr;
+  direct_repr!($cls);
+
+  use sdb::encode;
+  #[cfg(feature = "desse")]
+  encode!($cls);
 }
 
 pub struct TxDb<
