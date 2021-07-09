@@ -330,6 +330,12 @@ impl<
   }
 
   #[inline]
+  pub fn upsert(&mut self, k: &RK, v: &RV) -> std::result::Result<bool, Error> {
+    self.rm(k)?;
+    self.put(k, v)
+  }
+
+  #[inline]
   pub fn rm(&mut self, k: &RK) -> Result<usize, Error> {
     encode!(
       k,

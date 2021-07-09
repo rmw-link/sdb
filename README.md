@@ -319,6 +319,10 @@ impl<
     RV: ?Sized + Encode<V>,
   > DbPage<'a, K, V, P, RK, RV>
 {
+  pub fn upsert(&self, k: &RK, v: &RV) -> std::result::Result<bool, Error> {
+    db_page_w!(self, db, db.upsert(k, v))
+  }
+
   pub fn put(&self, k: &RK, v: &RV) -> Result<bool, Error> {
     db_page_w!(self, db, db.put(k, v))
   }
