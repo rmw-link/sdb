@@ -27,7 +27,6 @@ pub macro repr($cls:ident) {
   direct_repr!($cls);
 
   use sdb::encode;
-  #[cfg(feature = "desse")]
   encode!($cls);
 }
 
