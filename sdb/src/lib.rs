@@ -122,18 +122,7 @@ impl<'a> ReadTx<'a> {
     id: usize,
   ) -> Db_<K, V, P> {
     let tx = &self.0;
-    match tx.root_db::<K, V, P>(id) {
-      None => {
-        {
-          let mut w = Env::mut_txn_begin(tx.env_borrow()).unwrap();
-          let tree = create_db_::<_, K, V, P>(&mut w).unwrap();
-          w.set_root(id, tree.db);
-          w.commit().unwrap();
-        }
-        tx.root_db::<K, V, P>(id).unwrap()
-      }
-      Some(tree) => tree,
-    }
+    tx.root_db::<K, V, P>(id).unwrap()
   }
 }
 
@@ -382,6 +371,16 @@ impl Tx {
     &self,
     id: usize,
   ) -> DbPage<K, V, P, RK, RV> {
+    if let None = {
+      let tx = Env::txn_begin(&self.env).unwrap();
+      tx.root_db::<K, V, P>(id)
+    } {
+      let mut w = Env::mut_txn_begin(&self.env).unwrap();
+      let tree = create_db_::<_, K, V, P>(&mut w).unwrap();
+      w.set_root(id, tree.db);
+      w.commit().unwrap();
+    }
+
     DbPage {
       tx: self,
       id,

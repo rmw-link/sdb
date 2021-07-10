@@ -20,7 +20,7 @@ pub static TX: Tx = {
 
   println!("DATABASE DIR {}", dir.display().to_string());
 
-  //use sdb::SdbArgs::{InitSize, MaxTx, Filename};
+  //use sdb::TxArgs::{InitSize, MaxTx, Filename};
 
   Tx::new(
     &dir,
