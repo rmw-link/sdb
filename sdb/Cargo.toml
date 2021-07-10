@@ -14,7 +14,7 @@ readme = "README.md"
 
 [dependencies]
 sanakirja = "1.2.5"
-desse = { version="0.2.1", optional = true }
+desse = { version = "0.2.1", optional = true }
 sdb_macro = { path="../sdb_macro", version="0.0.1" }
 
 [features]
@@ -22,5 +22,5 @@ default = ["desse"]
 
 [dev-dependencies]
 static_init= {git="https://gitlab.com/vkahl/static_init.git"}
-anyhow = "1.0.41"
+anyhow = "1.0.42"
 
